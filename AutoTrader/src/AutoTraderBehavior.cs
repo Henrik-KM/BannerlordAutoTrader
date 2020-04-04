@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.GameMenus;
+using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
 using TaleWorlds.Core;
 
 namespace AutoTrader
@@ -40,7 +42,7 @@ namespace AutoTrader
         private bool CanSell(int amount, ItemObject item, float priceFactor, int price, int merchantGold, int inventoryCapacity)
         {
             // Don't sell anything if price is too low
-            if (priceFactor < 1.2f)
+            if (priceFactor < 1.0f)
                 return false;
 
             int amountToKeep = 0;
@@ -88,10 +90,13 @@ namespace AutoTrader
 
         private void AutoTradeGoodsConsequence(MenuCallbackArgs args)
         {
-            //Initialize Inventory
-            InventoryManager.OpenScreenAsTrade(Settlement.CurrentSettlement.ItemRoster, Settlement.CurrentSettlement.Town, 
+            // Initialize Inventory
+            InventoryManager.OpenScreenAsTrade(Settlement.CurrentSettlement.ItemRoster, Settlement.CurrentSettlement.GetComponent<Town>(), 
                 InventoryManager.InventoryCategoryType.Goods, null);
             InventoryLogic inventoryLogic = InventoryManager.MyInventoryLogic;
+
+            // Get the lock tracker
+            var locks = Campaign.Current.GetCampaignBehavior<InventoryLockTracker>().GetLocks();
 
             // Initialize player info
             int troopWage = PartyBase.MainParty.MobileParty.GetTotalWage();
@@ -115,7 +120,7 @@ namespace AutoTrader
             // Own items
             foreach (ItemRosterElement itemRosterElement in PartyBase.MainParty.ItemRoster)
             {
-                if (itemRosterElement.EquipmentElement.Item.IsTradeGood || itemRosterElement.EquipmentElement.Item.IsFood)
+                if (!locks.Contains(itemRosterElement) && (itemRosterElement.EquipmentElement.Item.IsTradeGood || itemRosterElement.EquipmentElement.Item.IsFood) && !itemRosterElement.EquipmentElement.Item.IsMountable)
                 {
                     ItemCategory itemCategory = itemRosterElement.EquipmentElement.Item.GetItemCategory();
                     float priceFactor = Settlement.CurrentSettlement.Town.MarketData.GetPriceFactor(itemCategory, true);
@@ -152,38 +157,61 @@ namespace AutoTrader
                 {
                     ItemCategory itemCategory = itemRosterElement.EquipmentElement.Item.GetItemCategory();
                     float priceFactor = Settlement.CurrentSettlement.Town.MarketData.GetPriceFactor(itemCategory, false);
+                    int buyoutPrice = inventoryLogic.GetItemPrice(itemRosterElement, true);
 
-                    itemPriceFactorBuyList.Add(new KeyValuePair<ItemRosterElement, float>(itemRosterElement, priceFactor));
+                    float profit = (float)buyoutPrice * (1.0f - priceFactor);
+
+                    itemPriceFactorBuyList.Add(new KeyValuePair<ItemRosterElement, float>(itemRosterElement, profit));
                 }
             }
 
             // Sort buy List to buy best offers first if gold or capacity is unsufficient
-            itemPriceFactorBuyList.Sort((pair1, pair2) => pair1.Value.CompareTo(pair2.Value));
+            itemPriceFactorBuyList.Sort((pair1, pair2) => pair2.Value.CompareTo(pair1.Value));
 
             foreach ( var pair in itemPriceFactorBuyList)
             {
                 ItemCategory itemCategory = pair.Key.EquipmentElement.Item.GetItemCategory();
                 int buyoutPrice = inventoryLogic.GetItemPrice(pair.Key, true);
                 int totalAmount = pair.Key.Amount;
-                bool canBuy = CanBuy(totalAmount, pair.Key.EquipmentElement.Weight, pair.Value, buyoutPrice, tempGold, inventoryCapacity - tempWeight);
+                float priceFactor = Settlement.CurrentSettlement.Town.MarketData.GetPriceFactor(itemCategory, false);
+                bool canBuy = CanBuy(totalAmount, pair.Key.EquipmentElement.Weight, priceFactor, buyoutPrice, tempGold, inventoryCapacity - tempWeight);
+
 
                 while (canBuy)
                 {
-                    // Update temp gold and capacity
-                    tempGold -= buyoutPrice;
-                    tempWeight += pair.Key.EquipmentElement.Weight;
+                    // Get the weight of the item in inventory
+                    int itemIndex = PartyBase.MainParty.ItemRoster.FindIndexOfItem(pair.Key.EquipmentElement.Item);
+                    float itemStackWeight = 0;
+                    if (itemIndex > 0)
+                        itemStackWeight = PartyBase.MainParty.ItemRoster.GetElementCopyAtIndex(itemIndex).GetRosterElementWeight();
 
-                    // Generate command
-                    TransferCommand transferCommand = TransferCommand.Transfer(1, InventoryLogic.InventorySide.OtherInventory, InventoryLogic.InventorySide.PlayerInventory,
-                        pair.Key, EquipmentIndex.None, EquipmentIndex.None, CharacterObject.PlayerCharacter, true);
+                    // Have the same item not more than 20% of max weight
+                    if (itemStackWeight >= (float)inventoryCapacity / 5.0f)
+                    {
+                        canBuy = false;
+                        InformationManager.DisplayMessage(new InformationMessage("That is enough " + pair.Key.EquipmentElement.Item.ToString() +
+                            ". I won't buy more of it automatically until you increase your carry capacity."));
+                    } 
+                    else
+                    {
+                        // Update temp gold and capacity
+                        tempGold -= buyoutPrice;
+                        tempWeight += pair.Key.EquipmentElement.Weight;
 
-                    inventoryLogic.AddTransferCommand(transferCommand);
+                        // Generate command
+                        TransferCommand transferCommand = TransferCommand.Transfer(1, InventoryLogic.InventorySide.OtherInventory, InventoryLogic.InventorySide.PlayerInventory,
+                            pair.Key, EquipmentIndex.None, EquipmentIndex.None, CharacterObject.PlayerCharacter, true);
 
-                    // Update price info
-                    float priceFactor = Settlement.CurrentSettlement.Town.MarketData.GetPriceFactor(itemCategory, false);
-                    buyoutPrice = inventoryLogic.GetItemPrice(pair.Key, true);
-                    totalAmount -= 1;
-                    canBuy = CanBuy(totalAmount, pair.Key.EquipmentElement.Weight, priceFactor, buyoutPrice, tempGold, inventoryCapacity - tempWeight);
+                        inventoryLogic.AddTransferCommand(transferCommand);
+
+                        // Update price info
+                        priceFactor = Settlement.CurrentSettlement.Town.MarketData.GetPriceFactor(itemCategory, false);
+                        buyoutPrice = inventoryLogic.GetItemPrice(pair.Key, true);
+                        totalAmount -= 1;
+
+                        canBuy = CanBuy(totalAmount, pair.Key.EquipmentElement.Weight, priceFactor, buyoutPrice, tempGold, inventoryCapacity - tempWeight);
+                    }
+                        
                 }
             }
            
@@ -195,6 +223,9 @@ namespace AutoTrader
                 campaignGameStarter.AddGameMenuOption("town", "trade", "{=VN4ctHIU}Automatically trade goods",
                     new GameMenuOption.OnConditionDelegate(this.AutoTradeGoodsCondition),
                     new GameMenuOption.OnConsequenceDelegate(this.AutoTradeGoodsConsequence), false, 7, false);
+                /*campaignGameStarter.AddGameMenuOption("village", "trade", "{=VN4ctHIU}Automatically trade goods", 
+                    new GameMenuOption.OnConditionDelegate(this.AutoTradeGoodsCondition),
+                    new GameMenuOption.OnConsequenceDelegate(this.AutoTradeGoodsConsequence), false, -1, false);*/
         }
 
     }
