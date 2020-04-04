@@ -37,16 +37,16 @@ namespace AutoTrader
             return true;
         }
 
-        private int CalculateAmountToSell(ItemRosterElement itemRosterElement, float priceFactor, int price, int merchantGold, int inventoryCapacity)
+        private int CalculateAmountToSell(int amount, ItemObject item, float priceFactor, int price, int merchantGold, int inventoryCapacity)
         {
             // Don't sell anything if price is too low
             if (priceFactor < 1.2f)
                 return 0;
 
             int amountToKeep = 0;
-            if (itemRosterElement.EquipmentElement.Item.IsFood)
+            if (item.IsFood)
             {
-                if( itemRosterElement.EquipmentElement.Item == DefaultItems.Grain)
+                if( item == DefaultItems.Grain)
                 {
                     // Keep some grain as base food
                     amountToKeep = Math.Max(10, (int)(((float)inventoryCapacity / 10.0f) / DefaultItems.Grain.Weight));
@@ -58,10 +58,10 @@ namespace AutoTrader
                 }
             }
 
-            if (amountToKeep > itemRosterElement.Amount)
+            if (amountToKeep > amount)
                 return 0;
 
-            int amountToSell = itemRosterElement.Amount - amountToKeep;
+            int amountToSell = amount - amountToKeep;
 
             // Make sure merchant has enough gold
             if (amountToSell * price > merchantGold)
@@ -72,15 +72,13 @@ namespace AutoTrader
             return amountToSell;
         }
 
-        private int CalculateAmountToBuy(ItemRosterElement itemRosterElement, float priceFactor, int price, int availableGold, float availableCapacity)
+        private int CalculateAmountToBuy(int amount, float weight, float priceFactor, int price, int availableGold, float availableCapacity)
         {
             // Don't buy anything if the price is too high
             if (priceFactor > 0.7f)
                 return 0;
 
             int amountToKeepInStock = 7;
-            int amount = itemRosterElement.Amount;
-            float weight = itemRosterElement.GetRosterElementWeight();
 
             // If there is too few left in stock, we don't want to buy it to keep the city healthy and to prevent overpricing
             if (amount < amountToKeepInStock)
@@ -122,9 +120,7 @@ namespace AutoTrader
             float tempWeight = totalWeight;
 
             // List for transfer commands
-            List<TransferCommand> transferCommands = new List<TransferCommand>();
             List<KeyValuePair<ItemRosterElement, float>> itemPriceFactorBuyList = new List<KeyValuePair<ItemRosterElement, float>>();
-            List<KeyValuePair<ItemRosterElement, float>> itemPriceFactorSellList = new List<KeyValuePair<ItemRosterElement, float>>();
 
             // Own items
             foreach (ItemRosterElement itemRosterElement in PartyBase.MainParty.ItemRoster)
@@ -133,8 +129,32 @@ namespace AutoTrader
                 {
                     ItemCategory itemCategory = itemRosterElement.EquipmentElement.Item.GetItemCategory();
                     float priceFactor = Settlement.CurrentSettlement.Town.MarketData.GetPriceFactor(itemCategory, true);
+                    int buyoutPrice = inventoryLogic.GetItemPrice(itemRosterElement, false);
+                    int totalAmount = itemRosterElement.Amount;
+                    int amountToSell = CalculateAmountToSell(totalAmount, itemRosterElement.EquipmentElement.Item, priceFactor, buyoutPrice, tempMerchantGold, inventoryCapacity);
 
-                    itemPriceFactorSellList.Add(new KeyValuePair<ItemRosterElement, float>(itemRosterElement, priceFactor));
+                    while (amountToSell > 0)
+                    {
+                        // sell a quarter of the amountToSell
+                        int amount = 1; // Math.Max(1, (int)((float)amountToSell / 4.0f));
+
+                        // Update temp gold and capacity
+                        tempGold += amount * buyoutPrice;
+                        tempMerchantGold -= amount * buyoutPrice;
+                        tempWeight -= amount * itemRosterElement.GetRosterElementWeight();
+
+                        // Generate command
+                        TransferCommand transferCommand = TransferCommand.Transfer(amount, InventoryLogic.InventorySide.PlayerInventory, InventoryLogic.InventorySide.OtherInventory,
+                            itemRosterElement, EquipmentIndex.None, EquipmentIndex.None, CharacterObject.PlayerCharacter, true);
+
+                        inventoryLogic.AddTransferCommand(transferCommand);
+                        
+                        // Update with new prices
+                        priceFactor = Settlement.CurrentSettlement.Town.MarketData.GetPriceFactor(itemCategory, true);
+                        buyoutPrice = inventoryLogic.GetItemPrice(itemRosterElement, false);
+                        totalAmount -= amount;
+                        amountToSell = CalculateAmountToSell(totalAmount, itemRosterElement.EquipmentElement.Item, priceFactor, buyoutPrice, tempMerchantGold, inventoryCapacity);
+                    }
                 }
             }
 
@@ -150,51 +170,39 @@ namespace AutoTrader
                 }
             }
 
-            // Sell first to increade available gold and capacity
-            foreach (var pair in itemPriceFactorSellList)
-            {
-                int buyoutPrice = inventoryLogic.GetItemPrice(pair.Key, false);
-                int amountToSell = CalculateAmountToSell(pair.Key, pair.Value, buyoutPrice, tempMerchantGold, inventoryCapacity);
-
-                if (amountToSell > 0)
-                {
-                    // Update temp gold and capacity
-                    tempGold += amountToSell * buyoutPrice;
-                    tempMerchantGold -= amountToSell * buyoutPrice;
-                    tempWeight -= amountToSell * pair.Key.GetRosterElementWeight();
-
-                    // Generate command
-                    TransferCommand transferCommand = TransferCommand.Transfer(amountToSell, InventoryLogic.InventorySide.PlayerInventory, InventoryLogic.InventorySide.OtherInventory, 
-                        pair.Key, EquipmentIndex.None, EquipmentIndex.None, CharacterObject.PlayerCharacter, true);
-
-                    transferCommands.Add(transferCommand);
-                }
-            }
-
             // Sort buy List to buy best offers first if gold or capacity is unsufficient
             itemPriceFactorBuyList.Sort((pair1, pair2) => pair1.Value.CompareTo(pair2.Value));
 
             foreach ( var pair in itemPriceFactorBuyList)
             {
+                ItemCategory itemCategory = pair.Key.EquipmentElement.Item.GetItemCategory();
                 int buyoutPrice = inventoryLogic.GetItemPrice(pair.Key, true);
-                int amountToBuy = CalculateAmountToBuy(pair.Key, pair.Value, buyoutPrice, tempGold, inventoryCapacity - tempWeight);
+                int totalAmount = pair.Key.Amount;
+                int amountToBuy = CalculateAmountToBuy(totalAmount, pair.Key.GetRosterElementWeight(), pair.Value, buyoutPrice, tempGold, inventoryCapacity - tempWeight);
 
-                if (amountToBuy > 0)
+                while (amountToBuy > 0)
                 {
+                    // buy only a quarter
+                    int amount = 1;// Math.Max(1, (int)((float)amountToBuy / 4.0f));
+
                     // Update temp gold and capacity
-                    tempGold -= amountToBuy * buyoutPrice;
-                    tempWeight += amountToBuy * pair.Key.GetRosterElementWeight();
+                    tempGold -= amount * buyoutPrice;
+                    tempWeight += amount * pair.Key.GetRosterElementWeight();
 
                     // Generate command
-                    TransferCommand transferCommand = TransferCommand.Transfer(amountToBuy, InventoryLogic.InventorySide.OtherInventory, InventoryLogic.InventorySide.PlayerInventory,
+                    TransferCommand transferCommand = TransferCommand.Transfer(amount, InventoryLogic.InventorySide.OtherInventory, InventoryLogic.InventorySide.PlayerInventory,
                         pair.Key, EquipmentIndex.None, EquipmentIndex.None, CharacterObject.PlayerCharacter, true);
 
-                    transferCommands.Add(transferCommand);
+                    inventoryLogic.AddTransferCommand(transferCommand);
+
+                    // Update price info
+                    float priceFactor = Settlement.CurrentSettlement.Town.MarketData.GetPriceFactor(itemCategory, false);
+                    buyoutPrice = inventoryLogic.GetItemPrice(pair.Key, true);
+                    totalAmount -= amount;
+                    amountToBuy = CalculateAmountToBuy(totalAmount, pair.Key.GetRosterElementWeight(), pair.Value, buyoutPrice, tempGold, inventoryCapacity - tempWeight);
                 }
             }
-            
-            // Process Commands
-            inventoryLogic.AddTransferCommands(transferCommands);
+           
         }
 
         private void AddDialogAndGameMenus(CampaignGameStarter campaignGameStarter)
