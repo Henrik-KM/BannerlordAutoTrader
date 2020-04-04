@@ -2,13 +2,16 @@
 <Module>
 	<Name value = "AutoTrader"/>
 	<Id value = "AutoTrader"/>
-	<Version value = "v1.0.0"/>
+	<Version value = "v1.2.0"/>
 	<SingleplayerModule value="true"/>
 	<MultiplayerModule value="false"/>
+	<Official value="false"/>
 	<DependedModules>
 		<DependedModule Id="Native"/>
 		<DependedModule Id="SandBoxCore"/>
 		<DependedModule Id="Sandbox"/>
+		<DependedModule Id="CustomBattle"/>
+		<DependedModule Id="StoryMode" />
 	</DependedModules>
 	<SubModules>
 		<SubModule>
