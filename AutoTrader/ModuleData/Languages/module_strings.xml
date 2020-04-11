@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<base xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" type="string">
+  <tags>
+    <tag language="English" />
+  </tags>
+  <strings>
+    <string id="ATTrade" text="Automatically trade wares" />
+    <!---->
+    <string id="ATConfig" text="AutoTrader Options" />
+    <string id="ATOptions" text="AutoTrader Configuration" />
+    <string id="ATLockHint" text="Note: Lock individual items in your inventory to keep them from being sold." />
+    <!---->
+    <string id="ATBuyThreshold" text="Buy under % of the average price" />
+    <string id="ATSellThreshold" text="Sell above % of the average price" />
+    <string id="ATMaxCapacity" text="Maximum % of inventory filled by the same good" />
+    <string id="ATKeepGrains" text="Amount of grain to keep" />
+    <string id="ATKeepConsumables" text="Amount of each other consumable to keep" />
+    <string id="ATUseInventorySpace" text="Total % of inventory space the mod may use" />
+    <string id="ATKeepWages" text="Keep enough gold for X days of troop wages" />
+    <string id="ATSearchRadius" text="Average price search radius (advanced)" />
+    <!---->
+    <string id="ATSellSmithing" text="Sell charcoal and ingots" />
+    <string id="ATTradeHorses" text="Trade Horses (buys only carry horses)" />
+    <string id="ATTradeWeapons" text="Trade Weapons (sells all unlocked)" />
+    <string id="ATTradeArmor" text="Trade Armor (sells all unlocked)" />
+    <string id="ATTradeGoods" text="Trade Goods" />
+    <string id="ATTradeConsumables" text="Trade Consumables" />
+    <!---->
+    <string id="ATAll" text="All" />
+    <string id="ATInf" text="Inf." />
+    <!---->
+    <string id="ATBuy" text="Buy" />
+    <string id="ATSell" text="Sell" />
+    <string id="ATDefault" text="Default: " />
+    <string id="ATDone" text="Done" />
+    <string id="ATCancel" text="Cancel" />
+  </strings>
+</base>
