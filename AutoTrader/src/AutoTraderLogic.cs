@@ -8,6 +8,7 @@ namespace AutoTrader
 {
     public static class AutoTraderLogic
     {
+        private static bool _isSimpleAI;
         private static bool _isTown;
         private static bool _isBuying;
 
@@ -30,6 +31,8 @@ namespace AutoTrader
         private static bool _sellConsumables;
         private static bool _buyGoods;
         private static bool _sellGoods;
+        private static bool _buyLivestock;
+        private static bool _sellLivestock;
 
         public static void PerformAutoTrade()
         {
@@ -74,6 +77,7 @@ namespace AutoTrader
         {
             // Inventory logic
             _inventoryLogic = InventoryManager.MyInventoryLogic;
+            _isSimpleAI = AutoTraderConfig.SimpleTradingAI;
 
             // Inventory capacity
             _baseCapacity = PartyBase.MainParty.MobileParty.InventoryCapacity;
@@ -104,7 +108,9 @@ namespace AutoTrader
             _sellConsumables = AutoTraderConfig.SellConsumablesValue;
             _buyGoods = AutoTraderConfig.BuyGoodsValue;
             _sellGoods = AutoTraderConfig.SellGoodsValue;
-    }
+            _buyLivestock = AutoTraderConfig.BuyLivestockValue;
+            _sellLivestock = AutoTraderConfig.SellLivestockValue;
+        }
 
         private static void Sell()
         {
@@ -112,12 +118,14 @@ namespace AutoTrader
 
             // Loop through all items in inventory
             ItemRoster playerItemRoster = PartyBase.MainParty.ItemRoster;
+
             foreach (ItemRosterElement itemRosterElement in playerItemRoster)
             {
                 // Check if its filtered
                 if (IsItemFiltered(itemRosterElement)) continue;
 
                 int amount = itemRosterElement.Amount;
+
                 float averagePrice = GetAveragePrice(itemRosterElement);
 
                 // Sell items one by one
@@ -126,7 +134,6 @@ namespace AutoTrader
                 {
                     int buyout_price = 0;
                     canSell = CanSell(itemRosterElement, averagePrice, amount, out buyout_price);
-
                     if (canSell)
                     {
                         // Update members
@@ -187,6 +194,20 @@ namespace AutoTrader
             }
         }
 
+        private static bool SimpleWorthCheck(ItemRosterElement itemRosterElement, int buyoutPrice)
+        {
+            int truePrice = itemRosterElement.EquipmentElement.Item.Value;
+            if (!_isBuying && buyoutPrice > ((float)AutoTraderConfig.SellThresholdValue / 100.0f) * (float)truePrice)
+            {
+                return true;
+            }
+            else if (_isBuying && buyoutPrice < ((float)AutoTraderConfig.BuyThresholdValue / 100.0f) * (float)truePrice)
+            {
+                return true;
+            }
+            return false;
+        }
+
         private static void ProcessTransaction(ItemRosterElement itemRosterElement, int buyoutPrice)
         {
             ItemObject itemObject = itemRosterElement.EquipmentElement.Item;
@@ -216,7 +237,7 @@ namespace AutoTrader
             {
                 ItemObject itemObject = itemRosterElement.EquipmentElement.Item;
                 // Check if its filtered
-                if (!IsHorse(itemObject)) continue;
+                if (!AutoTraderHelpers.IsHorse(itemObject)) continue;
 
                 int amount = itemRosterElement.Amount;
                 float averagePrice = GetAveragePrice(itemRosterElement);
@@ -239,66 +260,78 @@ namespace AutoTrader
         {
             // Retrieve price
             buyoutPrice = _inventoryLogic.GetItemPrice(itemRosterElement, _isBuying);
-            float priceFactor = (float)buyoutPrice / averagePrice;
-
-            // Buy only carry horses
             ItemObject itemObject = itemRosterElement.EquipmentElement.Item;
-            if (IsHorse(itemObject))
+
+            // Special Rules
+            // Horses
+            if (AutoTraderSpecialRules.CheckBuyHorsesCondition(itemObject))
             {
-                if (itemObject.HorseComponent.IsPackAnimal && _buyHorses)
-                {
-                    if ((int)((float)PartyBase.MainParty.NumberOfAllMembers / 2.0f) > PartyBase.MainParty.NumberOfPackAnimals && buyoutPrice * 3 < _availablePlayerGold)
-                    {
-                        return CheckBasicBuyRequirements(itemRosterElement, amount, buyoutPrice);
-                    }
-                        
-                    else
-                        return false;
-                }
-                else return false;
+                if (AutoTraderSpecialRules.CheckBuyHorsesRules(itemObject, buyoutPrice, _availablePlayerGold))
+                    return CheckBasicBuyRequirements(itemRosterElement, amount, buyoutPrice);
+                return false; // buy no other horses
             }
 
-            // Check threshold
-            if (priceFactor > (float)AutoTraderConfig.BuyThresholdValue / 100.0f)
-                return false;
-
-            // Check if we have enough cattle
-            if (itemObject.IsAnimal)
+            // Consumables
+            if (AutoTraderSpecialRules.CheckBuyConsumablesCondition(itemObject))
             {
-                // Don't buy more livestock than we have party members
-                if (PartyBase.MainParty.NumberOfAllMembers < PartyBase.MainParty.ItemRoster.NumberOfLivestockAnimals)
-                    return false;
-                else
+                if (AutoTraderSpecialRules.CheckBuyConsumablesRules(itemObject))
                     return CheckBasicBuyRequirements(itemRosterElement, amount, buyoutPrice);
             }
 
-            // Check weight
-            int itemIndex = PartyBase.MainParty.ItemRoster.FindIndexOfItem(itemObject);
-            float stackWeightInRoster = 0f;
-            if (itemIndex > 0)
+            // Price niveau
+            if (_isSimpleAI)
             {
-                stackWeightInRoster = PartyBase.MainParty.ItemRoster.GetElementCopyAtIndex(itemIndex).GetRosterElementWeight();
+                if (!SimpleWorthCheck(itemRosterElement, buyoutPrice))
+                    return false;
             }
-            if (stackWeightInRoster >= (float)_baseCapacity * ((float)AutoTraderConfig.MaxCapacityValue / 100f))
+            else
             {
-                return false;
+                // Check threshold
+                float priceFactor = (float)buyoutPrice / averagePrice;
+                if (priceFactor > (float)AutoTraderConfig.BuyThresholdValue / 100.0f)
+                    return false;
             }
 
-            return CheckBasicBuyRequirements(itemRosterElement, amount, buyoutPrice);
+            // Specials rules after price check
+            // Check if we have enough cattle
+            if (AutoTraderSpecialRules.CheckBuyCattleCondition(itemObject))
+            {
+                if (AutoTraderSpecialRules.CheckBuyCattleRule())
+                    return CheckBasicBuyRequirements(itemRosterElement, amount, buyoutPrice);
+                else return false; // Don't buy more cattle    
+            }
+
+            // Check weight
+            if (AutoTraderSpecialRules.CheckBuyMaxCapacityRule(itemObject, _baseCapacity))
+                return CheckBasicBuyRequirements(itemRosterElement, amount, buyoutPrice);
+            else return false;
         }
 
         private static bool CanSell(ItemRosterElement itemRosterElement, float averagePrice, int amount, out int buyoutPrice)
         {
             // Retrieve price
             buyoutPrice = _inventoryLogic.GetItemPrice(itemRosterElement, _isBuying);
-            float priceFactor = (float)buyoutPrice / averagePrice;
 
             // Sell all Armor and Weapons
             ItemObject itemObject = itemRosterElement.EquipmentElement.Item;
-            if (IsArmor(itemObject) || IsWeapon(itemObject))
-                return CheckBasicSellRequirements(itemRosterElement, amount, buyoutPrice);
-
-            if (IsHorse(itemObject))
+            if (AutoTraderHelpers.IsArmor(itemObject))
+            {
+                if (itemObject.Tier < (ItemObject.ItemTiers)AutoTraderConfig.ArmorTierValue)
+                {
+                    return CheckBasicSellRequirements(itemRosterElement, amount, buyoutPrice);
+                }
+                else return false;
+            } else if (AutoTraderHelpers.IsWeapon(itemObject))
+            {
+                if (itemObject.Tier < (ItemObject.ItemTiers)AutoTraderConfig.WeaponTierValue)
+                {
+                    return CheckBasicSellRequirements(itemRosterElement, amount, buyoutPrice);
+                }
+                else return false;
+            }
+                
+            // Special horse rule
+            if (AutoTraderHelpers.IsHorse(itemObject))
             {
                 if (itemObject.HorseComponent.IsPackAnimal && _sellHorses)
                 {
@@ -307,7 +340,7 @@ namespace AutoTrader
             }
 
             // Check amounts to keep
-            if (IsConsumable(itemObject))
+            if (AutoTraderHelpers.IsConsumable(itemObject))
             {
                 int amountToKeep = itemObject == DefaultItems.Grain ?
                     AutoTraderConfig.KeepGrainsValue : AutoTraderConfig.KeepConsumablesValue;
@@ -323,10 +356,19 @@ namespace AutoTrader
                     
             }
 
-            // Check threshold
-            if (priceFactor < (float)AutoTraderConfig.SellThresholdValue / 100.0f)
-                return false;
-
+            if (_isSimpleAI)
+            {
+                if (!SimpleWorthCheck(itemRosterElement, buyoutPrice))
+                    return false;
+            }
+            else
+            {
+                // Check threshold
+                float priceFactor = (float)buyoutPrice / averagePrice;
+                if (priceFactor < (float)AutoTraderConfig.SellThresholdValue / 100.0f)
+                    return false;
+            }
+            
             return CheckBasicSellRequirements(itemRosterElement, amount, buyoutPrice);
         }
 
@@ -340,7 +382,7 @@ namespace AutoTrader
             if (amount <= 0)
                 return false;
 
-            if (!IsHorse(itemObject) && itemObject.Weight > _availableInventoryCapacity)
+            if (!AutoTraderHelpers.IsHorse(itemObject) && itemObject.Weight > _availableInventoryCapacity)
                 return false;
 
             return true;
@@ -410,99 +452,28 @@ namespace AutoTrader
                 return true;
 
             // Exclude horses when buying for now
-            if (IsHorse(itemObject) && _isBuying)
+            if (AutoTraderHelpers.IsHorse(itemObject) && _isBuying)
                 return true;
 
             // Filter by type
-            if (IsSmithingMaterial(itemObject))
+            if (!_isBuying && AutoTraderHelpers.IsSmithingMaterial(itemObject))
                 return _sellSmithing ? false : true;
-            if (IsHorse(itemObject)  && !(_isBuying ? _buyHorses : _sellHorses))
+            if (AutoTraderHelpers.IsHorse(itemObject)  && !(_isBuying ? _buyHorses : _sellHorses))
                 return true;
-            if (IsArmor(itemObject)  && !(_isBuying ? _buyArmor : _sellArmor))
+            if (AutoTraderHelpers.IsArmor(itemObject)  && !(_isBuying ? _buyArmor : _sellArmor))
                 return true;
-            if (IsWeapon(itemObject) && !(_isBuying ? _buyWeapons : _sellWeapons))
+            if (AutoTraderHelpers.IsWeapon(itemObject) && !(_isBuying ? _buyWeapons : _sellWeapons))
                 return true;
-            if (IsTradeGood(itemObject) && !(_isBuying ? _buyGoods : _sellGoods))
+            if (AutoTraderHelpers.IsLivestock(itemObject) && !(_isBuying ? _buyLivestock : _sellLivestock))
+                return true;
+            if (AutoTraderHelpers.IsTradeGood(itemObject) && !(_isBuying ? _buyGoods : _sellGoods))
             {
-                if (!IsConsumable(itemObject))
+                if (!AutoTraderHelpers.IsConsumable(itemObject))
                     return true;
             }
-            if (IsConsumable(itemObject) && !(_isBuying ? _buyConsumables : _sellConsumables))
+            if (AutoTraderHelpers.IsConsumable(itemObject) && !(_isBuying ? _buyConsumables : _sellConsumables))
                 return true;
 
-            return false;
-        }
-
-        private static void PrintMessage(string message)
-        {
-            InformationManager.DisplayMessage(new InformationMessage(message));
-        }
-
-        //--- Type checks ---//
-
-        private static bool IsArmor(ItemObject itemObject)
-        {
-            if (itemObject.ItemType == ItemObject.ItemTypeEnum.HeadArmor
-                || itemObject.ItemType == ItemObject.ItemTypeEnum.BodyArmor
-                || itemObject.ItemType == ItemObject.ItemTypeEnum.LegArmor
-                || itemObject.ItemType == ItemObject.ItemTypeEnum.HandArmor
-                || itemObject.ItemType == ItemObject.ItemTypeEnum.ChestArmor
-                || itemObject.ItemType == ItemObject.ItemTypeEnum.Cape
-                || itemObject.ItemType == ItemObject.ItemTypeEnum.HorseHarness)
-                return true;
-            return false;
-        }
-
-        private static bool IsWeapon(ItemObject itemObject)
-        {
-            if (itemObject.ItemType == ItemObject.ItemTypeEnum.OneHandedWeapon
-                || itemObject.ItemType == ItemObject.ItemTypeEnum.TwoHandedWeapon
-                || itemObject.ItemType == ItemObject.ItemTypeEnum.Polearm
-                || itemObject.ItemType == ItemObject.ItemTypeEnum.Arrows
-                || itemObject.ItemType == ItemObject.ItemTypeEnum.Bolts
-                || itemObject.ItemType == ItemObject.ItemTypeEnum.Shield
-                || itemObject.ItemType == ItemObject.ItemTypeEnum.Bow
-                || itemObject.ItemType == ItemObject.ItemTypeEnum.Crossbow
-                || itemObject.ItemType == ItemObject.ItemTypeEnum.Thrown
-                || itemObject.ItemType == ItemObject.ItemTypeEnum.Pistol
-                || itemObject.ItemType == ItemObject.ItemTypeEnum.Musket
-                || itemObject.ItemType == ItemObject.ItemTypeEnum.Bullets)
-                return true;
-            return false;
-        }
-
-        private static bool IsHorse(ItemObject itemObject)
-        {
-            if (itemObject.ItemType == ItemObject.ItemTypeEnum.Horse)
-                return true;
-            return false;
-        }
-
-        private static bool IsTradeGood(ItemObject itemObject)
-        {
-            if (itemObject.ItemType == ItemObject.ItemTypeEnum.Goods
-                || itemObject.ItemType == ItemObject.ItemTypeEnum.Animal)
-                return true;
-            return false;
-        }
-
-        private static bool IsConsumable(ItemObject itemObject)
-        {
-            if (itemObject.IsFood)
-                return true;
-            return false;
-        }
-
-        private static bool IsSmithingMaterial(ItemObject itemObject)
-        {
-            if (itemObject == DefaultItems.Charcoal
-                || itemObject == DefaultItems.IronIngot1
-                || itemObject == DefaultItems.IronIngot2
-                || itemObject == DefaultItems.IronIngot3
-                || itemObject == DefaultItems.IronIngot4
-                || itemObject == DefaultItems.IronIngot5
-                || itemObject == DefaultItems.IronIngot6)
-                return true;
             return false;
         }
 
