@@ -1,19 +1,23 @@
 ﻿using System;
 using System.IO;
+using System.Text;
 using System.Xml;
 using TaleWorlds.Engine;
+using TaleWorlds.Library;
 
 namespace AutoTrader
 {
     public static class AutoTraderConfig
     {
-        private static string _configFile;
+        private static PlatformFilePath _configFile;
 
         public static int MaxKeepGrainsValue { get; set; } = 500;
 
+        public static bool ShowAdvancedOptions { get; set; } = false;
+        public static int BuyThresholdValue { get; set; } = 90;
+        public static int SellThresholdValue { get; set; } = 100;
         public static bool SimpleTradingAI { get; set; } = false;
-        public static int BuyThresholdValue { get; set; } = 70;
-        public static int SellThresholdValue { get; set; } = 95;
+        public static bool UseWeightedValue { get; set; } = true;
         public static int MaxCapacityValue { get; set; } = 15;
         public static int KeepGrainsValue { get; set; } = 10;
         public static int KeepConsumablesValue { get; set; } = 4;
@@ -24,6 +28,7 @@ namespace AutoTrader
         public static int ArmorTierValue { get; set; } = 2;
 
         public static bool SellSmithingValue { get; set; } = false;
+        public static bool ResupplyHardwoodValue { get; set; } = false;
         public static bool ResupplyValue { get; set; } = false;
 
         public static bool BuyHorsesValue { get; set; } = true;
@@ -41,20 +46,26 @@ namespace AutoTrader
 
         public static int Version { get; set; } = 2;
 
+        public static bool ShowNotification { get; set; } = true;
+        public static bool ShowMenuEntry { get; set; } = true;
+        public static bool DisableOptionsHotkey { get; set; } = false;
+
         public static void Initialize()
         {
             // Get the config file path
-            AutoTraderConfig._configFile = Utilities.GetConfigsPath() + "AutoTraderConfig.xml";
+            AutoTraderConfig._configFile = new PlatformFilePath(EngineFilePaths.ConfigsPath, "AutoTraderConfig.xml");
 
             // If it does not exist, create it by an initial save
-            if (!File.Exists(AutoTraderConfig._configFile))
+            if (!FileHelper.FileExists(AutoTraderConfig._configFile))
             {
                 AutoTraderConfig.Save();
             }
             else
             {
                 // Read it
-                XmlTextReader textReader = new XmlTextReader(AutoTraderConfig._configFile);
+                var content = FileHelper.GetFileContentString(AutoTraderConfig._configFile);
+                var stringReader = new System.IO.StringReader(content);
+                XmlTextReader textReader = new XmlTextReader(stringReader);
 
                 bool found_version = false;
                 while (textReader.Read())
@@ -76,7 +87,10 @@ namespace AutoTrader
                     AutoTraderConfig.Save();
                 }
 
-                textReader = new XmlTextReader(AutoTraderConfig._configFile);
+                content = FileHelper.GetFileContentString(AutoTraderConfig._configFile);
+                stringReader = new System.IO.StringReader(content);
+                textReader = new XmlTextReader(stringReader);
+
                 while (textReader.Read())
                 {
                     if (textReader.IsStartElement())
@@ -88,6 +102,10 @@ namespace AutoTrader
                         else if (textReader.Name == "simpleTradingAI")
                         {
                             AutoTraderConfig.SimpleTradingAI = Boolean.Parse(textReader.ReadString());
+                        }
+                        else if (textReader.Name == "useWeightedValue")
+                        {
+                            AutoTraderConfig.UseWeightedValue = Boolean.Parse(textReader.ReadString());
                         }
                         else if (textReader.Name == "sellThresholdValue")
                         {
@@ -132,6 +150,10 @@ namespace AutoTrader
                         else if (textReader.Name == "sellSmithingValue")
                         {
                             AutoTraderConfig.SellSmithingValue = Boolean.Parse(textReader.ReadString());
+                        }
+                        else if (textReader.Name == "resupplyHardwoodValue")
+                        {
+                            AutoTraderConfig.ResupplyHardwoodValue = Boolean.Parse(textReader.ReadString());
                         }
                         else if (textReader.Name == "buyHorsesValue")
                         {
@@ -181,6 +203,22 @@ namespace AutoTrader
                         {
                             AutoTraderConfig.SellLivestockValue = Boolean.Parse(textReader.ReadString());
                         }
+                        else if (textReader.Name == "showAdvancedOptions")
+                        {
+                            AutoTraderConfig.ShowAdvancedOptions = Boolean.Parse(textReader.ReadString());
+                        }
+                        else if (textReader.Name == "showNotificationNew")
+                        {
+                            AutoTraderConfig.ShowNotification = Boolean.Parse(textReader.ReadString());
+                        }
+                        else if (textReader.Name == "showMenuEntry")
+                        {
+                            AutoTraderConfig.ShowMenuEntry = Boolean.Parse(textReader.ReadString());
+                        }
+                        else if (textReader.Name == "disableOptionsHotkey")
+                        {
+                            AutoTraderConfig.DisableOptionsHotkey = Boolean.Parse(textReader.ReadString());
+                        }
                     }
                 }
             }
@@ -189,43 +227,61 @@ namespace AutoTrader
         public static void Save()
         {
             // Open writer and write settings
-            XmlTextWriter textWriter = new XmlTextWriter(AutoTraderConfig._configFile, null);
-            textWriter.Formatting = Formatting.Indented;
+            XmlDocument xmlDocument = new XmlDocument();
+            XmlWriterSettings xmlWriterSettings = new XmlWriterSettings();
+            xmlWriterSettings.Indent = true;
+            xmlWriterSettings.IndentChars = "  ";
+            xmlWriterSettings.NewLineChars = "\r\n";
+            xmlWriterSettings.NewLineHandling = NewLineHandling.Replace;
+            StringBuilder sb = new StringBuilder();
 
-            textWriter.WriteStartElement("config");
+            //using (XmlTextWriter textWriter = XmlWriter.Create(xmlDocument.CreateNavigator().AppendChild(), xmlWriterSettings))
+            using (XmlWriter textWriter = XmlWriter.Create(sb, xmlWriterSettings))
+            {
+                textWriter.WriteStartElement("config");
 
-            textWriter.WriteElementString("version", AutoTraderConfig.Version.ToString());
+                textWriter.WriteElementString("version", AutoTraderConfig.Version.ToString());
 
-            textWriter.WriteElementString("simpleTradingAI", AutoTraderConfig.SimpleTradingAI.ToString());
-            textWriter.WriteElementString("buyThresholdValue", AutoTraderConfig.BuyThresholdValue.ToString());
-            textWriter.WriteElementString("sellThresholdValue", AutoTraderConfig.SellThresholdValue.ToString());
-            textWriter.WriteElementString("maxCapacityValue", AutoTraderConfig.MaxCapacityValue.ToString());
-            textWriter.WriteElementString("keepGrainsValue", AutoTraderConfig.KeepGrainsValue.ToString());
-            textWriter.WriteElementString("keepConsumablesValue", AutoTraderConfig.KeepConsumablesValue.ToString());
-            textWriter.WriteElementString("useInventorySpaceValue", AutoTraderConfig.UseInventorySpaceValue.ToString());
-            textWriter.WriteElementString("keepWagesValue", AutoTraderConfig.KeepWagesValue.ToString());
-            textWriter.WriteElementString("searchRadiusValue", AutoTraderConfig.SearchRadiusValue.ToString());
-            textWriter.WriteElementString("weaponTierValue", AutoTraderConfig.WeaponTierValue.ToString());
-            textWriter.WriteElementString("armorTierValue", AutoTraderConfig.ArmorTierValue.ToString());
+                textWriter.WriteElementString("simpleTradingAI", AutoTraderConfig.SimpleTradingAI.ToString());
+                textWriter.WriteElementString("useWeightedValue", AutoTraderConfig.UseWeightedValue.ToString());
+                textWriter.WriteElementString("buyThresholdValue", AutoTraderConfig.BuyThresholdValue.ToString());
+                textWriter.WriteElementString("sellThresholdValue", AutoTraderConfig.SellThresholdValue.ToString());
+                textWriter.WriteElementString("maxCapacityValue", AutoTraderConfig.MaxCapacityValue.ToString());
+                textWriter.WriteElementString("keepGrainsValue", AutoTraderConfig.KeepGrainsValue.ToString());
+                textWriter.WriteElementString("keepConsumablesValue", AutoTraderConfig.KeepConsumablesValue.ToString());
+                textWriter.WriteElementString("useInventorySpaceValue", AutoTraderConfig.UseInventorySpaceValue.ToString());
+                textWriter.WriteElementString("keepWagesValue", AutoTraderConfig.KeepWagesValue.ToString());
+                textWriter.WriteElementString("searchRadiusValue", AutoTraderConfig.SearchRadiusValue.ToString());
+                textWriter.WriteElementString("weaponTierValue", AutoTraderConfig.WeaponTierValue.ToString());
+                textWriter.WriteElementString("armorTierValue", AutoTraderConfig.ArmorTierValue.ToString());
 
-            textWriter.WriteElementString("resupplyValue", AutoTraderConfig.ResupplyValue.ToString());
-            textWriter.WriteElementString("sellSmithingValue", AutoTraderConfig.SellSmithingValue.ToString());
+                textWriter.WriteElementString("resupplyValue", AutoTraderConfig.ResupplyValue.ToString());
+                textWriter.WriteElementString("sellSmithingValue", AutoTraderConfig.SellSmithingValue.ToString());
+                textWriter.WriteElementString("resupplyHardwoodValue", AutoTraderConfig.ResupplyHardwoodValue.ToString());
 
-            textWriter.WriteElementString("buyHorsesValue", AutoTraderConfig.BuyHorsesValue.ToString());
-            textWriter.WriteElementString("sellHorsesValue", AutoTraderConfig.SellHorsesValue.ToString());
-            textWriter.WriteElementString("buyArmorValue", AutoTraderConfig.BuyArmorValue.ToString());
-            textWriter.WriteElementString("sellArmorValue", AutoTraderConfig.SellArmorValue.ToString());
-            textWriter.WriteElementString("buyWeaponsValue", AutoTraderConfig.BuyWeaponsValue.ToString());
-            textWriter.WriteElementString("sellWeaponsValue", AutoTraderConfig.SellWeaponsValue.ToString());
-            textWriter.WriteElementString("buyGoodsValue", AutoTraderConfig.BuyGoodsValue.ToString());
-            textWriter.WriteElementString("sellGoodsValue", AutoTraderConfig.SellGoodsValue.ToString());
-            textWriter.WriteElementString("buyConsumablesValue", AutoTraderConfig.BuyConsumablesValue.ToString());
-            textWriter.WriteElementString("sellConsumablesValue", AutoTraderConfig.SellConsumablesValue.ToString());
-            textWriter.WriteElementString("buyLivestockValue", AutoTraderConfig.BuyLivestockValue.ToString());
-            textWriter.WriteElementString("sellLivestockValue", AutoTraderConfig.SellLivestockValue.ToString());
+                textWriter.WriteElementString("buyHorsesValue", AutoTraderConfig.BuyHorsesValue.ToString());
+                textWriter.WriteElementString("sellHorsesValue", AutoTraderConfig.SellHorsesValue.ToString());
+                textWriter.WriteElementString("buyArmorValue", AutoTraderConfig.BuyArmorValue.ToString());
+                textWriter.WriteElementString("sellArmorValue", AutoTraderConfig.SellArmorValue.ToString());
+                textWriter.WriteElementString("buyWeaponsValue", AutoTraderConfig.BuyWeaponsValue.ToString());
+                textWriter.WriteElementString("sellWeaponsValue", AutoTraderConfig.SellWeaponsValue.ToString());
+                textWriter.WriteElementString("buyGoodsValue", AutoTraderConfig.BuyGoodsValue.ToString());
+                textWriter.WriteElementString("sellGoodsValue", AutoTraderConfig.SellGoodsValue.ToString());
+                textWriter.WriteElementString("buyConsumablesValue", AutoTraderConfig.BuyConsumablesValue.ToString());
+                textWriter.WriteElementString("sellConsumablesValue", AutoTraderConfig.SellConsumablesValue.ToString());
+                textWriter.WriteElementString("buyLivestockValue", AutoTraderConfig.BuyLivestockValue.ToString());
+                textWriter.WriteElementString("sellLivestockValue", AutoTraderConfig.SellLivestockValue.ToString());
 
-            textWriter.WriteEndElement();
-            textWriter.Close();
+                textWriter.WriteElementString("showAdvancedOptions", AutoTraderConfig.ShowAdvancedOptions.ToString());
+
+                textWriter.WriteElementString("showNotificationNew", AutoTraderConfig.ShowNotification.ToString());
+                textWriter.WriteElementString("showMenuEntry", AutoTraderConfig.ShowMenuEntry.ToString());
+                textWriter.WriteElementString("disableOptionsHotkey", AutoTraderConfig.DisableOptionsHotkey.ToString());
+
+                textWriter.WriteEndElement();
+            }
+
+            FileHelper.SaveFileString(AutoTraderConfig._configFile, sb.ToString());
         }
     }
 }

@@ -47,15 +47,33 @@ namespace AutoTrader
             return true;
         }
 
+        private bool AutoTradeGoodsCaravanCondition()
+        {
+            return true;
+        }
+
+        private void AutoTradeGoodsCaravanConsequence()
+        {
+            AutoTraderLogic.PerformAutoTrade(true);
+            PlayerEncounter.LeaveEncounter = true;
+        }
+
         private void AddDialogAndGameMenus(CampaignGameStarter campaignGameStarter)
         {
             if (campaignGameStarter != null)
+            {
                 campaignGameStarter.AddGameMenuOption("town", "trade", new TextObject("{=ATTrade}Automatically trade wares", null).ToString(),
                     new GameMenuOption.OnConditionDelegate(this.AutoTradeGoodsCondition),
                     new GameMenuOption.OnConsequenceDelegate(this.AutoTradeGoodsConsequence), false, 7, false);
-                campaignGameStarter.AddGameMenuOption("village", "do_nothing", new TextObject("{=ATTrade}Automatically trade wares", null).ToString(), 
+                campaignGameStarter.AddGameMenuOption("village", "do_nothing", new TextObject("{=ATTrade}Automatically trade wares", null).ToString(),
                     new GameMenuOption.OnConditionDelegate(this.AutoTradeGoodsVillageCondition),
                     new GameMenuOption.OnConsequenceDelegate(this.AutoTradeGoodsConsequence), false, 3, false);
+                campaignGameStarter.AddPlayerLine("caravan_buy_products", "caravan_talk",
+                    "close_window", "{=ATCaravan}I'd like to inspect your wares. (Autotrade)", 
+                    new ConversationSentence.OnConditionDelegate(this.AutoTradeGoodsCaravanCondition),
+                    new ConversationSentence.OnConsequenceDelegate(this.AutoTradeGoodsCaravanConsequence), 100, null, null);
+            }
+                
         }
 
     }

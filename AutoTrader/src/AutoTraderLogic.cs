@@ -8,66 +8,80 @@ namespace AutoTrader
 {
     public static class AutoTraderLogic
     {
+        public static bool IsTradingActive { get; set; }
+
         private static bool _isSimpleAI;
-        private static bool _isTown;
-        private static bool _isBuying;
+        private enum MerchantType { 
+            Town, 
+            Village, 
+            Caravan }
+
+        private static MerchantType _merchantType;
+        public static bool IsBuying { get; set; }
 
         private static InventoryLogic _inventoryLogic;
-        private static IEnumerable<ItemRosterElement> _locks;
+        private static List<string> _locks;
 
         private static int _baseCapacity;
         private static int _availableInventoryCapacity;
         private static int _availablePlayerGold;
         private static int _availableMerchantGold;
 
-        private static bool _sellSmithing;
-        private static bool _buyHorses;
-        private static bool _sellHorses;
-        private static bool _buyArmor;
-        private static bool _sellArmor;
-        private static bool _buyWeapons;
-        private static bool _sellWeapons;
-        private static bool _buyConsumables;
-        private static bool _sellConsumables;
-        private static bool _buyGoods;
-        private static bool _sellGoods;
-        private static bool _buyLivestock;
-        private static bool _sellLivestock;
-
-        public static void PerformAutoTrade()
+        public static void PerformAutoTrade(bool isCaravan = false)
         {
-            _isTown = Settlement.CurrentSettlement.IsTown ? true : false;
+            // Set trading state
+            IsTradingActive = true;
+
+            // Define the merchant type
+            if (isCaravan)
+            {
+                _merchantType = MerchantType.Caravan;
+                // Make sure its opened through conversation
+                if (MobileParty.ConversationParty == null)
+                    return;
+            }
+            else
+                _merchantType = Settlement.CurrentSettlement.IsTown ? MerchantType.Town : MerchantType.Village;
+
             if (!InitializeInventory()) return;
             InitializeMembers();
 
-            if (_isTown)
+            /*if (_merchantType == MerchantType.Town || _merchantType == MerchantType.Caravan)
             {
                 Sell();
                 Buy();
                 BuyHorses();
                 _inventoryLogic.RemoveZeroCounts();
             }
-            else
-            {
-                Buy();
-                Sell();
-                Buy();
-                BuyHorses();
-                _inventoryLogic.RemoveZeroCounts();
-            }
+            else if(_merchantType == MerchantType.Village)
+            {*/
+            Buy();
+            Sell();
+            Buy();
+            BuyHorses();
+            //_inventoryLogic.RemoveZeroCounts();
+            //}
+
+            // Remove trading state
+            IsTradingActive = false;
         }
 
         private static bool InitializeInventory()
         {
-            if (_isTown)
+            if (_merchantType == MerchantType.Town)
             {
                 InventoryManager.OpenScreenAsTrade(Settlement.CurrentSettlement.ItemRoster, Settlement.CurrentSettlement.GetComponent<Town>(),
                     InventoryManager.InventoryCategoryType.None, null);
                 return true;
             }
-            else if (Settlement.CurrentSettlement.IsVillage)
+            else if (_merchantType == MerchantType.Village)
             {
                 InventoryManager.OpenScreenAsTrade(Settlement.CurrentSettlement.ItemRoster, Settlement.CurrentSettlement.Village, InventoryManager.InventoryCategoryType.None, null);
+                return true;
+            }
+            else if (_merchantType == MerchantType.Caravan)
+            {
+                InventoryManager.OpenTradeWithCaravanOrAlleyParty(MobileParty.ConversationParty, InventoryManager.InventoryCategoryType.None);
                 return true;
             }
             return false;
@@ -76,7 +90,7 @@ namespace AutoTrader
         private static void InitializeMembers()
         {
             // Inventory logic
-            _inventoryLogic = InventoryManager.MyInventoryLogic;
+            _inventoryLogic = InventoryManager.InventoryLogic;
             _isSimpleAI = AutoTraderConfig.SimpleTradingAI;
 
             // Inventory capacity
@@ -87,34 +101,32 @@ namespace AutoTrader
 
             // Player gold
             int initialGold = PartyBase.MainParty.Owner.Gold;
-            int troopWage = PartyBase.MainParty.MobileParty.GetTotalWage(); // ToDo: whole daily 
+            int troopWage = PartyBase.MainParty.MobileParty.TotalWage; // ToDo: whole daily 
             _availablePlayerGold = initialGold - (AutoTraderConfig.KeepWagesValue * troopWage);
 
             // Merchant gold
-            _availableMerchantGold = _isTown ? Settlement.CurrentSettlement.Town.Gold : Settlement.CurrentSettlement.Village.Gold;
+            switch (_merchantType)
+            {
+                case MerchantType.Town:
+                    _availableMerchantGold = Settlement.CurrentSettlement.Town.Gold;
+                    break;
+                case MerchantType.Village:
+                    _availableMerchantGold = Settlement.CurrentSettlement.Village.Gold;
+                    break;
+                case MerchantType.Caravan:
+                    _availableMerchantGold = MobileParty.ConversationParty.PartyTradeGold;
+                    break;
+            }
 
             // Locks
-            _locks = Campaign.Current.GetCampaignBehavior<InventoryLockTracker>().GetLocks();
-
-            // Read from config
-            _sellSmithing = AutoTraderConfig.SellSmithingValue;
-            _buyHorses = AutoTraderConfig.BuyHorsesValue;
-            _sellHorses = AutoTraderConfig.SellHorsesValue;
-            _buyArmor = AutoTraderConfig.BuyArmorValue;
-            _sellArmor = AutoTraderConfig.SellArmorValue;
-            _buyWeapons = AutoTraderConfig.BuyWeaponsValue;
-            _sellWeapons = AutoTraderConfig.SellWeaponsValue;
-            _buyConsumables = AutoTraderConfig.BuyConsumablesValue;
-            _sellConsumables = AutoTraderConfig.SellConsumablesValue;
-            _buyGoods = AutoTraderConfig.BuyGoodsValue;
-            _sellGoods = AutoTraderConfig.SellGoodsValue;
-            _buyLivestock = AutoTraderConfig.BuyLivestockValue;
-            _sellLivestock = AutoTraderConfig.SellLivestockValue;
+            var locksEnumerable = Campaign.Current.GetCampaignBehavior<IInventoryLockTracker>().GetLocks();
+            if (locksEnumerable != null)
+                _locks = locksEnumerable.ToList<string>();
         }
 
         private static void Sell()
         {
-            _isBuying = false;
+            IsBuying = false;
 
             // Loop through all items in inventory
             ItemRoster playerItemRoster = PartyBase.MainParty.ItemRoster;
@@ -147,19 +159,25 @@ namespace AutoTrader
 
         private static void Buy()
         {
-            _isBuying = true;
+            IsBuying = true;
 
             var itemBuyList = new List<KeyValuePair<ItemRosterElement, KeyValuePair<float, float>>>();
 
+            // Get item roster
+            ItemRoster merchantItemRoster;
+            if (_merchantType == MerchantType.Caravan)
+                merchantItemRoster = MobileParty.ConversationParty.ItemRoster;
+            else
+                merchantItemRoster = Settlement.CurrentSettlement.ItemRoster;
+
             // Loop through all items of merchant
-            ItemRoster merchantItemRoster = Settlement.CurrentSettlement.ItemRoster;
             foreach (ItemRosterElement itemRosterElement in merchantItemRoster)
             {
                 // Check if its filtered
                 if (IsItemFiltered(itemRosterElement)) continue;
 
                 float averagePrice = GetAveragePrice(itemRosterElement);
-                int buyoutPrice = _inventoryLogic.GetItemPrice(itemRosterElement, _isBuying);
+                int buyoutPrice = _inventoryLogic.GetItemPrice(itemRosterElement, IsBuying);
                 float profit = averagePrice - (float)buyoutPrice;
 
                 itemBuyList.Add(new KeyValuePair<ItemRosterElement, KeyValuePair<float, float>> (
@@ -176,7 +194,7 @@ namespace AutoTrader
                 float averagePrice = element.Value.Key;
                 int amount = itemRosterElement.Amount;
 
-                // Sell items one by one
+                // Buy items one by one
                 bool canBuy = false;
                 do
                 {
@@ -197,11 +215,11 @@ namespace AutoTrader
         private static bool SimpleWorthCheck(ItemRosterElement itemRosterElement, int buyoutPrice)
         {
             int truePrice = itemRosterElement.EquipmentElement.Item.Value;
-            if (!_isBuying && buyoutPrice > ((float)AutoTraderConfig.SellThresholdValue / 100.0f) * (float)truePrice)
+            if (!IsBuying && buyoutPrice > ((float)AutoTraderConfig.SellThresholdValue / 100.0f) * (float)truePrice)
             {
                 return true;
             }
-            else if (_isBuying && buyoutPrice < ((float)AutoTraderConfig.BuyThresholdValue / 100.0f) * (float)truePrice)
+            else if (IsBuying && buyoutPrice < ((float)AutoTraderConfig.BuyThresholdValue / 100.0f) * (float)truePrice)
             {
                 return true;
             }
@@ -213,13 +231,13 @@ namespace AutoTrader
             ItemObject itemObject = itemRosterElement.EquipmentElement.Item;
 
             // Update available gold
-            _availablePlayerGold += _isBuying ? -buyoutPrice : buyoutPrice;
-            _availableMerchantGold += _isBuying ? buyoutPrice : -buyoutPrice;
+            _availablePlayerGold += IsBuying ? -buyoutPrice : buyoutPrice;
+            _availableMerchantGold += IsBuying ? buyoutPrice : -buyoutPrice;
 
             // Generate command
             TransferCommand transferCommand = TransferCommand.Transfer(1, 
-                _isBuying ? InventoryLogic.InventorySide.OtherInventory : InventoryLogic.InventorySide.PlayerInventory, 
-                _isBuying ? InventoryLogic.InventorySide.PlayerInventory : InventoryLogic.InventorySide.OtherInventory, 
+                IsBuying ? InventoryLogic.InventorySide.OtherInventory : InventoryLogic.InventorySide.PlayerInventory, 
+                IsBuying ? InventoryLogic.InventorySide.PlayerInventory : InventoryLogic.InventorySide.OtherInventory, 
                 itemRosterElement, EquipmentIndex.None, EquipmentIndex.None, CharacterObject.PlayerCharacter, true);
 
             // Update available weight
@@ -230,9 +248,17 @@ namespace AutoTrader
 
         private static void BuyHorses()
         {
-            _isBuying = true;
+            IsBuying = true;
 
-            ItemRoster merchantItemRoster = Settlement.CurrentSettlement.ItemRoster;
+            ItemRoster merchantItemRoster;
+
+            // Get the item roster
+            if (_merchantType == MerchantType.Caravan)
+                merchantItemRoster = MobileParty.ConversationParty.ItemRoster;
+            else
+                merchantItemRoster = Settlement.CurrentSettlement.ItemRoster;
+
+            // Loop through items
             foreach (ItemRosterElement itemRosterElement in merchantItemRoster)
             {
                 ItemObject itemObject = itemRosterElement.EquipmentElement.Item;
@@ -259,7 +285,7 @@ namespace AutoTrader
         private static bool CanBuy(ItemRosterElement itemRosterElement, float averagePrice, int amount, out int buyoutPrice)
         {
             // Retrieve price
-            buyoutPrice = _inventoryLogic.GetItemPrice(itemRosterElement, _isBuying);
+            buyoutPrice = _inventoryLogic.GetItemPrice(itemRosterElement, IsBuying);
             ItemObject itemObject = itemRosterElement.EquipmentElement.Item;
 
             // Special Rules
@@ -275,6 +301,12 @@ namespace AutoTrader
             if (AutoTraderSpecialRules.CheckBuyConsumablesCondition(itemObject))
             {
                 if (AutoTraderSpecialRules.CheckBuyConsumablesRules(itemObject))
+                    return CheckBasicBuyRequirements(itemRosterElement, amount, buyoutPrice);
+            }
+
+            if (AutoTraderSpecialRules.CheckBuyGoodsCondition(itemObject))
+            {
+                if (AutoTraderSpecialRules.CheckBuyGoodsRules(itemObject))
                     return CheckBasicBuyRequirements(itemRosterElement, amount, buyoutPrice);
             }
 
@@ -310,7 +342,7 @@ namespace AutoTrader
         private static bool CanSell(ItemRosterElement itemRosterElement, float averagePrice, int amount, out int buyoutPrice)
         {
             // Retrieve price
-            buyoutPrice = _inventoryLogic.GetItemPrice(itemRosterElement, _isBuying);
+            buyoutPrice = _inventoryLogic.GetItemPrice(itemRosterElement, IsBuying);
 
             // Sell all Armor and Weapons
             ItemObject itemObject = itemRosterElement.EquipmentElement.Item;
@@ -333,7 +365,7 @@ namespace AutoTrader
             // Special horse rule
             if (AutoTraderHelpers.IsHorse(itemObject))
             {
-                if (itemObject.HorseComponent.IsPackAnimal && _sellHorses)
+                if (itemObject.HorseComponent.IsPackAnimal && AutoTraderConfig.SellHorsesValue)
                 {
                     return false;
                 }
@@ -354,6 +386,14 @@ namespace AutoTrader
                     return false;
                 }
                     
+            }
+
+            // Special hardwood rule
+            if (itemObject == DefaultItems.HardWood && AutoTraderConfig.ResupplyHardwoodValue)
+            {
+                // If hardwood needs to be resupplied dont sell
+                if (AutoTraderSpecialRules.CheckBuyResupplyHardwoodRule())
+                    return false;
             }
 
             if (_isSimpleAI)
@@ -403,34 +443,63 @@ namespace AutoTrader
         {
             float averagePrice = 0;
             float actualDistance = 0;
-            int count = 0;
+            float count = 0.0f;
 
-            foreach (Town town in Town.All)
+            foreach (Town town in Town.AllTowns)
             {
-                if (AutoTraderConfig.SearchRadiusValue > 999 // Consider the maximum setting
-                    || Campaign.Current.Models.MapDistanceModel.GetDistance(Settlement.CurrentSettlement, town.Settlement, (float)AutoTraderConfig.SearchRadiusValue, out actualDistance))
+                bool isInRange = Campaign.Current.Models.MapDistanceModel.GetDistance(MobileParty.MainParty, town.Settlement, (float)AutoTraderConfig.SearchRadiusValue, out actualDistance);
+                if (AutoTraderConfig.UseWeightedValue // Consider weighted value
+                    || AutoTraderConfig.SearchRadiusValue > 999 // Consider the maximum setting
+                    || isInRange)
                 {
-                    averagePrice += town.MarketData.GetPrice(itemRosterElement, PartyBase.MainParty.MobileParty, true);
-                    averagePrice += town.MarketData.GetPrice(itemRosterElement, PartyBase.MainParty.MobileParty, false);
-                    count += 2;
+                    if (AutoTraderConfig.UseWeightedValue)
+                    {
+                        // If its the current town, skip
+                        if (!(_merchantType == MerchantType.Caravan) && Settlement.CurrentSettlement.IsTown && town == Settlement.CurrentSettlement.Town)
+                            continue;
+                        // Weight by distance
+                        averagePrice += (float)town.MarketData.GetPrice(itemRosterElement.EquipmentElement.Item, PartyBase.MainParty.MobileParty, true) / actualDistance;
+                        averagePrice += (float)town.MarketData.GetPrice(itemRosterElement.EquipmentElement.Item, PartyBase.MainParty.MobileParty, false) / actualDistance;
+                        count += 2.0f / actualDistance;
+                    }
+                    else
+                    {
+                        averagePrice += town.MarketData.GetPrice(itemRosterElement.EquipmentElement.Item, PartyBase.MainParty.MobileParty, true);
+                        averagePrice += town.MarketData.GetPrice(itemRosterElement.EquipmentElement.Item, PartyBase.MainParty.MobileParty, false);
+                        count += 2.0f;
+                    }
                 }
-
             }
             if (itemRosterElement.EquipmentElement.Item.IsTradeGood)
             {
                 foreach (Village village in Village.All)
                 {
-                    if (AutoTraderConfig.SearchRadiusValue > 999 // Consider the maximum setting
-                        || Campaign.Current.Models.MapDistanceModel.GetDistance(Settlement.CurrentSettlement, village.Settlement, (float)AutoTraderConfig.SearchRadiusValue, out actualDistance))
+                    bool isInRange = Campaign.Current.Models.MapDistanceModel.GetDistance(MobileParty.MainParty, village.Settlement, (float)AutoTraderConfig.SearchRadiusValue, out actualDistance);
+                    if (AutoTraderConfig.UseWeightedValue // Consider weighted value
+                        || AutoTraderConfig.SearchRadiusValue > 999 // Consider the maximum setting
+                        || isInRange)
                     {
-                        averagePrice += village.MarketData.GetPrice(itemRosterElement.EquipmentElement.Item, PartyBase.MainParty.MobileParty, true, null);
-                        averagePrice += village.MarketData.GetPrice(itemRosterElement.EquipmentElement.Item, PartyBase.MainParty.MobileParty, false, null);
-                        count += 2;
+                        if (AutoTraderConfig.UseWeightedValue)
+                        {
+                            // If its the current town, skip
+                            if (!(_merchantType == MerchantType.Caravan) && Settlement.CurrentSettlement.IsVillage && village == Settlement.CurrentSettlement.Village)
+                                continue;
+                            // Weight by distance
+                            averagePrice += (float)village.MarketData.GetPrice(itemRosterElement.EquipmentElement.Item, PartyBase.MainParty.MobileParty, true, null) / actualDistance;
+                            averagePrice += (float)village.MarketData.GetPrice(itemRosterElement.EquipmentElement.Item, PartyBase.MainParty.MobileParty, false, null) / actualDistance;
+                            count += 2.0f / actualDistance;
+                        }
+                        else
+                        {
+                            averagePrice += village.MarketData.GetPrice(itemRosterElement.EquipmentElement.Item, PartyBase.MainParty.MobileParty, true, null);
+                            averagePrice += village.MarketData.GetPrice(itemRosterElement.EquipmentElement.Item, PartyBase.MainParty.MobileParty, false, null);
+                            count += 2.0f;
+                        }
                     }
                 }
             }
 
-            if (count == 0)
+            if (count == 0.0f)
                 return GetAveragePriceFallback(itemRosterElement);
 
             averagePrice /= count;
@@ -443,35 +512,50 @@ namespace AutoTrader
             return (float)itemRosterElement.EquipmentElement.Item.Value;
         }
 
-        private static bool IsItemFiltered(ItemRosterElement itemRosterElement)
+        private static bool IsItemLocked(ItemRosterElement itemRosterElement)
+        {
+            if (_locks != null)
+            {
+                var item_id = itemRosterElement.EquipmentElement.Item.StringId;
+                if (itemRosterElement.EquipmentElement.ItemModifier != null)
+                {
+                    item_id += itemRosterElement.EquipmentElement.ItemModifier.StringId;
+                }
+
+                return _locks.Contains(item_id);
+            }
+            return false;
+        }
+
+        public static bool IsItemFiltered(ItemRosterElement itemRosterElement)
         {
             ItemObject itemObject = itemRosterElement.EquipmentElement.Item;
 
             // Filter by lock
-            if (_locks.Contains(itemRosterElement))
+            if (IsItemLocked(itemRosterElement))
                 return true;
 
             // Exclude horses when buying for now
-            if (AutoTraderHelpers.IsHorse(itemObject) && _isBuying)
+            if (AutoTraderHelpers.IsHorse(itemObject) && IsBuying)
                 return true;
 
             // Filter by type
-            if (!_isBuying && AutoTraderHelpers.IsSmithingMaterial(itemObject))
-                return _sellSmithing ? false : true;
-            if (AutoTraderHelpers.IsHorse(itemObject)  && !(_isBuying ? _buyHorses : _sellHorses))
+            if (!IsBuying && AutoTraderHelpers.IsSmithingMaterial(itemObject))
+                return AutoTraderConfig.SellSmithingValue ? false : true;
+            if (AutoTraderHelpers.IsHorse(itemObject)  && !(IsBuying ? AutoTraderConfig.BuyHorsesValue : AutoTraderConfig.SellHorsesValue))
                 return true;
-            if (AutoTraderHelpers.IsArmor(itemObject)  && !(_isBuying ? _buyArmor : _sellArmor))
+            if (AutoTraderHelpers.IsArmor(itemObject)  && !(IsBuying ? AutoTraderConfig.BuyArmorValue : AutoTraderConfig.SellArmorValue))
                 return true;
-            if (AutoTraderHelpers.IsWeapon(itemObject) && !(_isBuying ? _buyWeapons : _sellWeapons))
+            if (AutoTraderHelpers.IsWeapon(itemObject) && !(IsBuying ? AutoTraderConfig.BuyWeaponsValue : AutoTraderConfig.SellWeaponsValue))
                 return true;
-            if (AutoTraderHelpers.IsLivestock(itemObject) && !(_isBuying ? _buyLivestock : _sellLivestock))
+            if (AutoTraderHelpers.IsLivestock(itemObject) && !(IsBuying ? AutoTraderConfig.BuyLivestockValue : AutoTraderConfig.SellLivestockValue))
                 return true;
-            if (AutoTraderHelpers.IsTradeGood(itemObject) && !(_isBuying ? _buyGoods : _sellGoods))
+            if (AutoTraderHelpers.IsTradeGood(itemObject) && !(IsBuying ? AutoTraderConfig.BuyGoodsValue : AutoTraderConfig.SellGoodsValue))
             {
                 if (!AutoTraderHelpers.IsConsumable(itemObject))
                     return true;
             }
-            if (AutoTraderHelpers.IsConsumable(itemObject) && !(_isBuying ? _buyConsumables : _sellConsumables))
+            if (AutoTraderHelpers.IsConsumable(itemObject) && !(IsBuying ? AutoTraderConfig.BuyConsumablesValue : AutoTraderConfig.SellConsumablesValue))
                 return true;
 
             return false;

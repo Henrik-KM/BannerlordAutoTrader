@@ -54,6 +54,39 @@ namespace AutoTrader
             return false;
         }
 
+        // Resupply hardwood
+        public static bool CheckBuyGoodsCondition(ItemObject itemObject)
+        {
+            return AutoTraderHelpers.IsTradeGood(itemObject);
+        }
+
+        public static bool CheckBuyGoodsRules(ItemObject itemObject)
+        {
+            if (AutoTraderConfig.ResupplyHardwoodValue && itemObject == DefaultItems.HardWood)
+            {
+                if (CheckBuyResupplyHardwoodRule())
+                    return true;
+            }
+            return false;
+        }
+
+        public static bool CheckBuyResupplyHardwoodRule()
+        {
+            // Find item stack in current inventory
+            int amountInInventory = 0;
+            int itemIndex = PartyBase.MainParty.ItemRoster.FindIndexOfItem(DefaultItems.HardWood);
+            if (itemIndex >= 0)
+            {
+                amountInInventory = PartyBase.MainParty.ItemRoster.GetElementCopyAtIndex(itemIndex).Amount;
+            }
+
+            if (amountInInventory < AutoTraderConfig.KeepConsumablesValue)
+            {
+                return true;
+            }
+            return false;
+        }
+
         // Resupply
         public static bool CheckBuyConsumablesCondition(ItemObject itemObject)
         {

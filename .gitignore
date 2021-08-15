@@ -1,2 +1,8 @@
-
-AutoTrader/src/Properties/AssemblyInfo.cs
+*.sln
+*.csproj
+.vs
+Properties
+packages.config
+packages
+bin
+obj
