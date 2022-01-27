@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using TaleWorlds.Core;
+using TaleWorlds.Library;
 
 namespace AutoTrader
 {
@@ -11,7 +13,13 @@ namespace AutoTrader
     {
         public static void PrintMessage(string message)
         {
-            InformationManager.DisplayMessage(new InformationMessage(message));
+            InformationManager.DisplayMessage(new InformationMessage(message, Color.FromUint(16753958U)));
+        }
+
+        public static void PrintDebugMessage(string message)
+        {
+            if (AutoTraderConfig.DebugMode)
+                InformationManager.DisplayMessage(new InformationMessage(message, Color.FromUint(16753958U)));
         }
 
         public static bool IsArmor(ItemObject itemObject)

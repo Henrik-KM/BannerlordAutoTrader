@@ -13,6 +13,7 @@ namespace AutoTrader
         // Capacity
         public static bool CheckBuyMaxCapacityRule(ItemObject itemObject, int baseCapacity)
         {
+            // Checks if we have the item too often
             int itemIndex = PartyBase.MainParty.ItemRoster.FindIndexOfItem(itemObject);
             float stackWeightInRoster = 0f;
             if (itemIndex >= 0) //TEST
@@ -48,8 +49,10 @@ namespace AutoTrader
             if (itemObject.HorseComponent.IsPackAnimal && AutoTraderConfig.BuyHorsesValue)
             {
                 // Buy pack horses rule
-                if ((int)((float)PartyBase.MainParty.NumberOfAllMembers / 2.0f) > PartyBase.MainParty.NumberOfPackAnimals && buyoutPrice * 3 < availablePlayerGold)
+                if ((int)((float)PartyBase.MainParty.NumberOfAllMembers) > PartyBase.MainParty.NumberOfPackAnimals && buyoutPrice * 2 < availablePlayerGold)
                     return true;
+
+                // TODO: Add max herding setting
             }
             return false;
         }
@@ -103,12 +106,16 @@ namespace AutoTrader
             return false;
         }
 
-        private static bool CheckBuyResupplyRule(ItemObject itemObject)
+        /// <returns>
+        /// True if the given item is below the restock value
+        /// False if not
+        /// </returns>
+        public static bool CheckBuyResupplyRule(ItemObject itemObject)
         {
             // Find item stack in current inventory
             int amountInInventory = 0;
             int itemIndex = PartyBase.MainParty.ItemRoster.FindIndexOfItem(itemObject);
-            if( itemIndex >= 0)
+            if (itemIndex >= 0)
             {
                 amountInInventory = PartyBase.MainParty.ItemRoster.GetElementCopyAtIndex(itemIndex).Amount;
             }
@@ -121,9 +128,10 @@ namespace AutoTrader
                     return true;
                 }
                 return false;
-            }else
+            }
+            else
             {
-                if(amountInInventory < AutoTraderConfig.KeepConsumablesValue)
+                if (amountInInventory < AutoTraderConfig.KeepConsumablesValue)
                 {
                     return true;
                 }

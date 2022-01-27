@@ -10,8 +10,7 @@ namespace AutoTrader
 
         public override void RegisterEvents()
         {
-            CampaignEvents.OnNewGameCreatedEvent.AddNonSerializedListener(this, new Action<CampaignGameStarter>(this.OnNewGameCreated));
-            CampaignEvents.OnGameLoadedEvent.AddNonSerializedListener(this, new Action<CampaignGameStarter>(this.OnGameLoaded));
+            CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, new Action<CampaignGameStarter>(this.OnGameLoaded));
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -20,14 +19,9 @@ namespace AutoTrader
 
         private void AutoTradeGoodsConsequence(MenuCallbackArgs args)
         {
-            AutoTraderLogic.PerformAutoTrade();
+            AutoTraderLogic.PerformAutoTrade(false);
         }
 
-        private void OnNewGameCreated(CampaignGameStarter campaignGameStarter)
-        {
-            if (campaignGameStarter != null)
-                this.AddDialogAndGameMenus(campaignGameStarter);
-        }
 
         private void OnGameLoaded(CampaignGameStarter campaignGameStarter)
         {

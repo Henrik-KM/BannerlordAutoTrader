@@ -45,10 +45,7 @@ namespace AutoTrader
         public static bool SellLivestockValue { get; set; } = true;
 
         public static int Version { get; set; } = 2;
-
-        public static bool ShowNotification { get; set; } = true;
-        public static bool ShowMenuEntry { get; set; } = true;
-        public static bool DisableOptionsHotkey { get; set; } = false;
+        public static bool DebugMode { get; set; } = false;
 
         public static void Initialize()
         {
@@ -207,17 +204,9 @@ namespace AutoTrader
                         {
                             AutoTraderConfig.ShowAdvancedOptions = Boolean.Parse(textReader.ReadString());
                         }
-                        else if (textReader.Name == "showNotificationNew")
+                        else if (textReader.Name == "debugMode")
                         {
-                            AutoTraderConfig.ShowNotification = Boolean.Parse(textReader.ReadString());
-                        }
-                        else if (textReader.Name == "showMenuEntry")
-                        {
-                            AutoTraderConfig.ShowMenuEntry = Boolean.Parse(textReader.ReadString());
-                        }
-                        else if (textReader.Name == "disableOptionsHotkey")
-                        {
-                            AutoTraderConfig.DisableOptionsHotkey = Boolean.Parse(textReader.ReadString());
+                            AutoTraderConfig.DebugMode = Boolean.Parse(textReader.ReadString());
                         }
                     }
                 }
@@ -274,9 +263,7 @@ namespace AutoTrader
 
                 textWriter.WriteElementString("showAdvancedOptions", AutoTraderConfig.ShowAdvancedOptions.ToString());
 
-                textWriter.WriteElementString("showNotificationNew", AutoTraderConfig.ShowNotification.ToString());
-                textWriter.WriteElementString("showMenuEntry", AutoTraderConfig.ShowMenuEntry.ToString());
-                textWriter.WriteElementString("disableOptionsHotkey", AutoTraderConfig.DisableOptionsHotkey.ToString());
+                textWriter.WriteElementString("debugMode", AutoTraderConfig.DebugMode.ToString());
 
                 textWriter.WriteEndElement();
             }

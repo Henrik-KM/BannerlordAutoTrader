@@ -1,72 +1,120 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.SandBox.CampaignBehaviors;
 using TaleWorlds.Core;
 
+[assembly: InternalsVisibleTo("AutoTraderTests")]
 namespace AutoTrader
 {
     public static class AutoTraderLogic
     {
         public static bool IsTradingActive { get; set; }
+        public static bool IsBuying { get; set; }
 
-        private static bool _isSimpleAI;
         private enum MerchantType { 
             Town, 
             Village, 
             Caravan }
 
         private static MerchantType _merchantType;
-        public static bool IsBuying { get; set; }
 
         private static InventoryLogic _inventoryLogic;
         private static List<string> _locks;
 
-        private static int _baseCapacity;
         private static int _availableInventoryCapacity;
         private static int _availablePlayerGold;
         private static int _availableMerchantGold;
+        private static bool _isCaravan;
 
         public static void PerformAutoTrade(bool isCaravan = false)
         {
+            _isCaravan = isCaravan;
+
             // Set trading state
             IsTradingActive = true;
-
-            // Define the merchant type
-            if (isCaravan)
+            try
             {
-                _merchantType = MerchantType.Caravan;
-                // Make sure its opened through conversation
-                if (MobileParty.ConversationParty == null)
+                if (!InitInventory())
+                {
+                    AutoTraderHelpers.PrintDebugMessage("Failed to initialize the inventory!");
                     return;
-            }
-            else
-                _merchantType = Settlement.CurrentSettlement.IsTown ? MerchantType.Town : MerchantType.Village;
+                }
 
-            if (!InitializeInventory()) return;
-            InitializeMembers();
+                InitializeMembers();
 
-            /*if (_merchantType == MerchantType.Town || _merchantType == MerchantType.Caravan)
-            {
+                Restock();
+                Buy();
                 Sell();
                 Buy();
                 BuyHorses();
-                _inventoryLogic.RemoveZeroCounts();
-            }
-            else if(_merchantType == MerchantType.Village)
-            {*/
-            Buy();
-            Sell();
-            Buy();
-            BuyHorses();
-            //_inventoryLogic.RemoveZeroCounts();
-            //}
-
-            // Remove trading state
-            IsTradingActive = false;
+            } catch ( Exception e)
+            {
+                AutoTraderHelpers.PrintMessage("My Lord! Something terrible happened to our autotraders! The last we heard of them is:\n" + e.ToString());
+            } finally
+            {
+                // Unset trading state
+                IsTradingActive = false;
+            }   
         }
 
-        private static bool InitializeInventory()
+        private static void InitializeMembers()
+        {
+            // Inventory logic
+            _inventoryLogic = InventoryManager.InventoryLogic;
+
+            // Player gold
+            int initialGold = PartyBase.MainParty.Owner.Gold;
+            int troopWage = PartyBase.MainParty.MobileParty.TotalWage; // ToDo: whole daily 
+            _availablePlayerGold = initialGold - (AutoTraderConfig.KeepWagesValue * troopWage);
+
+            UpdateAvailableInventoryCapacity();
+
+            InitMerchantType();
+            InitMerchantGold();
+
+            // Locks
+            var locksEnumerable = Campaign.Current.GetCampaignBehavior<IViewDataTracker>().GetInventoryLocks();
+            if (locksEnumerable != null)
+                _locks = locksEnumerable.ToList<string>();
+        }
+
+        private static void InitMerchantType()
+        {
+            if (_isCaravan)
+            {
+                _merchantType = MerchantType.Caravan;
+
+                // Make sure its opened through conversation
+                if (MobileParty.ConversationParty == null)
+                {
+                    AutoTraderHelpers.PrintDebugMessage("Caravan trading but not through a conversation!");
+                    return;
+                }
+            }
+            else
+                _merchantType = Settlement.CurrentSettlement.IsTown ? MerchantType.Town : MerchantType.Village;
+        }
+
+        private static void InitMerchantGold()
+        {
+            switch (_merchantType)
+            {
+                case MerchantType.Town:
+                    _availableMerchantGold = Settlement.CurrentSettlement.Town.Gold;
+                    break;
+                case MerchantType.Village:
+                    _availableMerchantGold = Settlement.CurrentSettlement.Village.Gold;
+                    break;
+                case MerchantType.Caravan:
+                    _availableMerchantGold = MobileParty.ConversationParty.PartyTradeGold;
+                    break;
+            }
+        }
+
+        private static bool InitInventory()
         {
             if (_merchantType == MerchantType.Town)
             {
@@ -87,41 +135,12 @@ namespace AutoTrader
             return false;
         }
 
-        private static void InitializeMembers()
+        private static void UpdateAvailableInventoryCapacity()
         {
-            // Inventory logic
-            _inventoryLogic = InventoryManager.InventoryLogic;
-            _isSimpleAI = AutoTraderConfig.SimpleTradingAI;
-
-            // Inventory capacity
-            _baseCapacity = PartyBase.MainParty.MobileParty.InventoryCapacity;
             float currentWeight = PartyBase.MainParty.ItemRoster.TotalWeight;
-            _availableInventoryCapacity = (int)((float)_baseCapacity * ((float)AutoTraderConfig.UseInventorySpaceValue / 100.0f));
+            _availableInventoryCapacity = (int)((float)PartyBase.MainParty.InventoryCapacity * ((float)AutoTraderConfig.UseInventorySpaceValue / 100.0f));
             _availableInventoryCapacity -= (int)currentWeight;
-
-            // Player gold
-            int initialGold = PartyBase.MainParty.Owner.Gold;
-            int troopWage = PartyBase.MainParty.MobileParty.TotalWage; // ToDo: whole daily 
-            _availablePlayerGold = initialGold - (AutoTraderConfig.KeepWagesValue * troopWage);
-
-            // Merchant gold
-            switch (_merchantType)
-            {
-                case MerchantType.Town:
-                    _availableMerchantGold = Settlement.CurrentSettlement.Town.Gold;
-                    break;
-                case MerchantType.Village:
-                    _availableMerchantGold = Settlement.CurrentSettlement.Village.Gold;
-                    break;
-                case MerchantType.Caravan:
-                    _availableMerchantGold = MobileParty.ConversationParty.PartyTradeGold;
-                    break;
-            }
-
-            // Locks
-            var locksEnumerable = Campaign.Current.GetCampaignBehavior<IInventoryLockTracker>().GetLocks();
-            if (locksEnumerable != null)
-                _locks = locksEnumerable.ToList<string>();
+            AutoTraderHelpers.PrintDebugMessage("Current weight: " + currentWeight.ToString() + ", available capacity: " + _availableInventoryCapacity.ToString());
         }
 
         private static void Sell()
@@ -131,7 +150,7 @@ namespace AutoTrader
             // Loop through all items in inventory
             ItemRoster playerItemRoster = PartyBase.MainParty.ItemRoster;
 
-            foreach (ItemRosterElement itemRosterElement in playerItemRoster)
+            foreach (ItemRosterElement itemRosterElement in playerItemRoster.ToList())
             {
                 // Check if its filtered
                 if (IsItemFiltered(itemRosterElement)) continue;
@@ -145,7 +164,7 @@ namespace AutoTrader
                 do
                 {
                     int buyout_price = 0;
-                    canSell = CanSell(itemRosterElement, averagePrice, amount, out buyout_price);
+                    canSell = CanSell(itemRosterElement, averagePrice, 1, out buyout_price);
                     if (canSell)
                     {
                         // Update members
@@ -153,7 +172,41 @@ namespace AutoTrader
                         amount--;
                     }
 
-                } while (canSell);
+                } while (canSell && amount > 0);
+            }
+        }
+
+        private static void Restock()
+        {
+            IsBuying = true;
+
+            ItemRoster merchantItemRoster = GetMerchantItemRoster();
+
+            // Loop through items
+            foreach (ItemRosterElement itemRosterElement in merchantItemRoster)
+            {
+                ItemObject itemObject = itemRosterElement.EquipmentElement.Item;
+                // Check if its filtered
+                if (!AutoTraderHelpers.IsConsumable(itemObject)) continue;
+
+                if (!AutoTraderSpecialRules.CheckBuyResupplyRule(itemObject)) continue;
+
+                int amount = itemRosterElement.Amount;
+                float averagePrice = GetAveragePrice(itemRosterElement);
+                int buyoutPrice = 0;
+
+                bool canBuy = false;
+                bool needsResupply = false;
+                do
+                {
+                    canBuy = CanBuy(itemRosterElement, averagePrice, 1, out buyoutPrice);
+                    needsResupply = AutoTraderSpecialRules.CheckBuyResupplyRule(itemObject);
+                    if (canBuy && needsResupply)
+                    {
+                        ProcessTransaction(itemRosterElement, buyoutPrice);
+                        amount -= 1;
+                    }
+                } while (canBuy && needsResupply && amount > 0);
             }
         }
 
@@ -164,11 +217,7 @@ namespace AutoTrader
             var itemBuyList = new List<KeyValuePair<ItemRosterElement, KeyValuePair<float, float>>>();
 
             // Get item roster
-            ItemRoster merchantItemRoster;
-            if (_merchantType == MerchantType.Caravan)
-                merchantItemRoster = MobileParty.ConversationParty.ItemRoster;
-            else
-                merchantItemRoster = Settlement.CurrentSettlement.ItemRoster;
+            ItemRoster merchantItemRoster = GetMerchantItemRoster();
 
             // Loop through all items of merchant
             foreach (ItemRosterElement itemRosterElement in merchantItemRoster)
@@ -199,7 +248,7 @@ namespace AutoTrader
                 do
                 {
                     int buyout_price = 0;
-                    canBuy = CanBuy(itemRosterElement, averagePrice, amount, out buyout_price);
+                    canBuy = CanBuy(itemRosterElement, averagePrice, 1, out buyout_price);
 
                     if (canBuy)
                     {
@@ -208,18 +257,49 @@ namespace AutoTrader
                         amount--;
                     }
 
-                } while (canBuy);
+                } while (canBuy && amount > 0);
             }
         }
 
-        private static bool SimpleWorthCheck(ItemRosterElement itemRosterElement, int buyoutPrice)
+        private static void BuyHorses()
         {
-            int truePrice = itemRosterElement.EquipmentElement.Item.Value;
-            if (!IsBuying && buyoutPrice > ((float)AutoTraderConfig.SellThresholdValue / 100.0f) * (float)truePrice)
+            IsBuying = true;
+
+            ItemRoster merchantItemRoster = GetMerchantItemRoster();
+
+            // Loop through items
+            foreach (ItemRosterElement itemRosterElement in merchantItemRoster)
+            {
+                ItemObject itemObject = itemRosterElement.EquipmentElement.Item;
+                // Check if its filtered
+                if (!AutoTraderHelpers.IsHorse(itemObject)) continue;
+
+                int amount = itemRosterElement.Amount;
+                float averagePrice = GetAveragePrice(itemRosterElement);
+                int buyoutPrice = 0;
+
+                bool canBuy = false;
+                do
+                {
+                    canBuy = CanBuy(itemRosterElement, averagePrice, 1, out buyoutPrice);
+                    if (canBuy)
+                    {
+                        ProcessTransaction(itemRosterElement, buyoutPrice);
+                        amount -= 1;
+                    }
+                } while (canBuy && amount > 0);
+            }
+        }
+
+        internal static bool SimpleWorthCheck(int value, int buyoutPrice)
+        {
+            /// Checks if the value is below or above threshold 
+
+            if (!IsBuying && buyoutPrice >= ((float)AutoTraderConfig.SellThresholdValue / 100.0f) * (float)value)
             {
                 return true;
             }
-            else if (IsBuying && buyoutPrice < ((float)AutoTraderConfig.BuyThresholdValue / 100.0f) * (float)truePrice)
+            else if (IsBuying && buyoutPrice < ((float)AutoTraderConfig.BuyThresholdValue / 100.0f) * (float)value)
             {
                 return true;
             }
@@ -241,45 +321,9 @@ namespace AutoTrader
                 itemRosterElement, EquipmentIndex.None, EquipmentIndex.None, CharacterObject.PlayerCharacter, true);
 
             // Update available weight
-            _availableInventoryCapacity = (int)((float)PartyBase.MainParty.InventoryCapacity * (AutoTraderConfig.UseInventorySpaceValue / 100.0f)) - (int)PartyBase.MainParty.ItemRoster.TotalWeight;
+            UpdateAvailableInventoryCapacity();
 
             _inventoryLogic.AddTransferCommand(transferCommand);
-        }
-
-        private static void BuyHorses()
-        {
-            IsBuying = true;
-
-            ItemRoster merchantItemRoster;
-
-            // Get the item roster
-            if (_merchantType == MerchantType.Caravan)
-                merchantItemRoster = MobileParty.ConversationParty.ItemRoster;
-            else
-                merchantItemRoster = Settlement.CurrentSettlement.ItemRoster;
-
-            // Loop through items
-            foreach (ItemRosterElement itemRosterElement in merchantItemRoster)
-            {
-                ItemObject itemObject = itemRosterElement.EquipmentElement.Item;
-                // Check if its filtered
-                if (!AutoTraderHelpers.IsHorse(itemObject)) continue;
-
-                int amount = itemRosterElement.Amount;
-                float averagePrice = GetAveragePrice(itemRosterElement);
-                int buyoutPrice = 0;
-
-                bool canBuy = false;
-                do
-                {
-                    canBuy = CanBuy(itemRosterElement, averagePrice, amount, out buyoutPrice);
-                    if (canBuy)
-                    {
-                        ProcessTransaction(itemRosterElement, buyoutPrice);
-                        amount -= 1;
-                    } 
-                } while (canBuy);
-            }
         }
 
         private static bool CanBuy(ItemRosterElement itemRosterElement, float averagePrice, int amount, out int buyoutPrice)
@@ -311,9 +355,9 @@ namespace AutoTrader
             }
 
             // Price niveau
-            if (_isSimpleAI)
+            if (AutoTraderConfig.SimpleTradingAI)
             {
-                if (!SimpleWorthCheck(itemRosterElement, buyoutPrice))
+                if (!SimpleWorthCheck(itemRosterElement.EquipmentElement.Item.Value, buyoutPrice))
                     return false;
             }
             else
@@ -334,7 +378,7 @@ namespace AutoTrader
             }
 
             // Check weight
-            if (AutoTraderSpecialRules.CheckBuyMaxCapacityRule(itemObject, _baseCapacity))
+            if (AutoTraderSpecialRules.CheckBuyMaxCapacityRule(itemObject, PartyBase.MainParty.InventoryCapacity))
                 return CheckBasicBuyRequirements(itemRosterElement, amount, buyoutPrice);
             else return false;
         }
@@ -396,9 +440,9 @@ namespace AutoTrader
                     return false;
             }
 
-            if (_isSimpleAI)
+            if (AutoTraderConfig.SimpleTradingAI)
             {
-                if (!SimpleWorthCheck(itemRosterElement, buyoutPrice))
+                if (!SimpleWorthCheck(itemRosterElement.EquipmentElement.Item.Value, buyoutPrice))
                     return false;
             }
             else
@@ -510,6 +554,13 @@ namespace AutoTrader
         private static float GetAveragePriceFallback(ItemRosterElement itemRosterElement)
         {
             return (float)itemRosterElement.EquipmentElement.Item.Value;
+        }
+
+        private static ItemRoster GetMerchantItemRoster()
+        {
+            if (_merchantType == MerchantType.Caravan)
+                return MobileParty.ConversationParty.ItemRoster;
+            return Settlement.CurrentSettlement.ItemRoster;
         }
 
         private static bool IsItemLocked(ItemRosterElement itemRosterElement)

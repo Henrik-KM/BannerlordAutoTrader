@@ -6,7 +6,6 @@ using TaleWorlds.Engine.Screens;
 using TaleWorlds.Library;
 using TaleWorlds.InputSystem;
 using AutoTrader.GUI;
-using AutoTrader.Notification;
 using HarmonyLib;
 
 namespace AutoTrader
@@ -23,17 +22,11 @@ namespace AutoTrader
 		{
 			base.OnSubModuleLoad();
 			AutoTraderConfig.Initialize();
+		}
 
-			if (AutoTraderConfig.ShowMenuEntry || (AutoTraderConfig.ShowNotification && AutoTraderConfig.ShowMenuEntry))
-			{
-				Module.CurrentModule.AddInitialStateOption(new InitialStateOption("AutoTraderConfig", new TextObject("{=ATConfig}AutoTrader Options", null), 9998, delegate ()
-				{
-					if(AutoTraderConfig.ShowNotification)
-						ScreenManager.PushScreen(new NotificationGauntletScreen());
-					else
-						ScreenManager.PushScreen(new AutoTradeMainMenuGauntletScreen());
-				}, () => (false, null)));
-			}
+		public override void OnGameInitializationFinished(Game game)
+		{
+			AutoTraderHelpers.PrintMessage("Thanks for using AutoTrader! Press <ALT + A + T> to open the settings menu.");
 		}
 
 		private void OpenSettingsMenu()
@@ -44,10 +37,11 @@ namespace AutoTrader
 
 		protected override void OnApplicationTick(float dt)
 		{
-			if(Game.Current != null && !AutoTraderConfig.DisableOptionsHotkey && !AutoTraderLogic.IsTradingActive)
+			if(Game.Current != null && !AutoTraderLogic.IsTradingActive)
 			{
 				if(Input.IsKeyDown(InputKey.LeftAlt) 
 					&& Input.IsKeyDown(InputKey.A) 
+					&& Input.IsKeyDown(InputKey.T)
 					&& Game.Current.GameStateManager.ActiveState.GetType() == typeof(MapState)
 					&& Game.Current.GameStateManager.ActiveState.IsMenuState == false
 					&& Game.Current.GameStateManager.ActiveState.IsMission == false)

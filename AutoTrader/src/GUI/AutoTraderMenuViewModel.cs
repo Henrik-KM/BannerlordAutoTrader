@@ -54,8 +54,6 @@ namespace AutoTrader
 		private string _tradeLivestockText;
 
 		private string _showAdvancedText;
-		private string _showMenuEntryText;
-		private string _disableOptionsHotkeyText;
 
 		private float _buyThresholdValue;
 		private string _buyThresholdValueAsString;
@@ -107,9 +105,6 @@ namespace AutoTrader
 		private bool _sellConsumablesValue;
 		private bool _buyLivestockValue;
 		private bool _sellLivestockValue;
-
-		private bool _showMenuEntryValue;
-		private bool _disableOptionsHotkeyValue;
 		private bool _isWeightedActive;
 		private bool _isSearchRadiusActive;
 
@@ -122,7 +117,7 @@ namespace AutoTrader
 			this._configMenuText = new TextObject("{=ATOptions}AutoTrader Configuration", null).ToString();
 			this._doneText = new TextObject("{=ATDone}Done", null).ToString();
 			this._cancelText = new TextObject("{=ATCancel}Cancel", null).ToString();
-			this._lockHintText = new TextObject("{=ATLockHint}Note: Press ALT + A on the map to open the config menu. Lock items to prevent them from being sold.", null).ToString();
+			this._lockHintText = new TextObject("{=ATLockHint}Note: Lock items to prevent them from being sold.", null).ToString();
 			this._buyText = new TextObject("{=ATBuy}Buy", null).ToString();
 			this._sellText = new TextObject("{=ATSell}Sell", null).ToString();
 			this._defaultText = new TextObject("{=ATDefault}Default: ", null).ToString();
@@ -153,8 +148,6 @@ namespace AutoTrader
 			this._weaponTierText = new TextObject("{=ATWeaponTier}Sell weapons of tier X and below", null).ToString();
 			this._armorTierText = new TextObject("{=ATArmorTier}Sell armor of tier X and below", null).ToString();
 
-			this._showMenuEntryText = new TextObject("{=ATShowMenuEntry}Show main menu config button (Requires restart. Press ALT + A ingame for config when disabled)", null).ToString();
-			this._disableOptionsHotkeyText = new TextObject("{=ATDisableOptionsHotkey}Disable options hotkey", null).ToString();
 			this._sellSmithingText = new TextObject("{=ATSellSmithing}Sell charcoal and ingots", null).ToString();
 			this._resupplyHardwoodText = new TextObject("{=ATResupplyHardwood}Resupply hardwood to 'keep consumables' value", null).ToString();
 			this._resupplyText = new TextObject("{=ATResupply}Resupply food to 'keep consumables' value", null).ToString();
@@ -187,8 +180,6 @@ namespace AutoTrader
 			this._buyConsumablesValue = AutoTraderConfig.BuyConsumablesValue;
 			this._buyLivestockValue = AutoTraderConfig.BuyLivestockValue;
 
-			this._showMenuEntryValue = AutoTraderConfig.ShowMenuEntry;
-			this._disableOptionsHotkeyValue = AutoTraderConfig.DisableOptionsHotkey;
 			this._sellSmithingValue = AutoTraderConfig.SellSmithingValue;
 			this._resupplyHardwoodValue = AutoTraderConfig.ResupplyHardwoodValue;
 			this._resupplyValue = AutoTraderConfig.ResupplyValue;
@@ -253,8 +244,6 @@ namespace AutoTrader
 			AutoTraderConfig.BuyConsumablesValue = this.BuyConsumablesValue;
 			AutoTraderConfig.BuyLivestockValue = this.BuyLivestockValue;
 
-			AutoTraderConfig.ShowMenuEntry = this.ShowMenuEntryValue;
-			AutoTraderConfig.DisableOptionsHotkey = this.DisableOptionsHotkeyValue;
 			AutoTraderConfig.SellSmithingValue = this.SellSmithingValue;
 			AutoTraderConfig.ResupplyHardwoodValue = this.ResupplyHardwoodValue;
 			AutoTraderConfig.ResupplyValue = this.ResupplyValue;
@@ -298,7 +287,6 @@ namespace AutoTrader
 			this.WeaponTierValue = 2.0f;
 			this.ArmorTierValue = 2.0f;
 
-			this.DisableOptionsHotkeyValue = false;
 			this.SellSmithingValue = false;
 			this.ResupplyHardwoodValue = false;
 			this.ResupplyValue = false;
@@ -371,24 +359,6 @@ namespace AutoTrader
 			this.SellConsumablesValue = true;
 
 			RefreshValues();
-		}
-
-		[DataSourceProperty]
-		public string DisableOptionsHotkeyText
-		{
-			get
-			{
-				return this._disableOptionsHotkeyText;
-			}
-		}
-
-		[DataSourceProperty]
-		public string ShowMenuEntryText
-		{
-			get
-			{
-				return this._showMenuEntryText;
-			}
 		}
 
 		[DataSourceProperty]
@@ -821,40 +791,6 @@ namespace AutoTrader
 					}
 
 					base.OnPropertyChanged("SimpleAIValue");
-				}
-			}
-		}
-
-		[DataSourceProperty]
-		public bool ShowMenuEntryValue
-		{
-			get
-			{
-				return this._showMenuEntryValue;
-			}
-			set
-			{
-				if (value != this._showMenuEntryValue)
-				{
-					this._showMenuEntryValue = value;
-					base.OnPropertyChanged("ShowMenuEntryValue");
-				}
-			}
-		}
-
-		[DataSourceProperty]
-		public bool DisableOptionsHotkeyValue
-		{
-			get
-			{
-				return this._disableOptionsHotkeyValue;
-			}
-			set
-			{
-				if (value != this._disableOptionsHotkeyValue)
-				{
-					this._disableOptionsHotkeyValue = value;
-					base.OnPropertyChanged("DisableOptionsHotkeyValue");
 				}
 			}
 		}
