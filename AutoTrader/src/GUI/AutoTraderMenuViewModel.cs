@@ -53,7 +53,6 @@ namespace AutoTrader
 		private string _tradeConsumablesText;
 		private string _tradeLivestockText;
 
-		private string _showAdvancedText;
 
 		private float _buyThresholdValue;
 		private string _buyThresholdValueAsString;
@@ -85,7 +84,6 @@ namespace AutoTrader
 		private float _armorTierValue;
 		private string _armorTierValueAsString;
 
-		private bool _showAdvancedValue;
 		private bool _useWeightedValue;
 		private bool _simpleAIValue;
 
@@ -134,9 +132,8 @@ namespace AutoTrader
 			this._headerSpecialText = new TextObject("{=ATHeaderSpecial}Special Options", null).ToString();
 			this._headerTradeText = new TextObject("{=ATHeaderTrade}Buy / Sell Options", null).ToString();
 
-			this._showAdvancedText = new TextObject("{=ATShowAdvanced}Show advanced settings", null).ToString();
 			this._useWeightedText = new TextObject("{=ATWeightedRadius}Weight average price by distance", null).ToString();
-			this._simpleAIText = new TextObject("{=ATSimpleAI}Use simple AI: Buy at green, sell at red (adjustable with buy / sell thresholds)", null).ToString();
+			this._simpleAIText = new TextObject("{=ATSimpleAI}Green/red-based trading (recommended, improves with trade rumors)", null).ToString();
 			this._buyThresholdText = new TextObject("{=ATBuyThreshold}Buy under X% of the average price", null).ToString();
 			this._sellThresholdText = new TextObject("{=ATSellThreshold}Sell above X% of the average price", null).ToString();
 			this._maxCapacityText = new TextObject("{=ATMaxCapacity}Maximum % of inventory filled by the same good", null).ToString();
@@ -153,13 +150,12 @@ namespace AutoTrader
 			this._resupplyText = new TextObject("{=ATResupply}Resupply food to 'keep consumables' value", null).ToString();
 
 			this._tradeHorsesText = new TextObject("{=ATTradeHorses}Trade Horses (buys only carry horses)", null).ToString();
-			this._tradeWeaponsText = new TextObject("{=ATTradeWeapons}Trade Weapons (sells all unlocked)", null).ToString();
-			this._tradeArmorText = new TextObject("{=ATTradeArmor}Trade Armor (sells all unlocked)", null).ToString();
+			this._tradeWeaponsText = new TextObject("{=ATTradeWeapons}Trade Weapons (sells below Tier X)", null).ToString();
+			this._tradeArmorText = new TextObject("{=ATTradeArmor}Trade Armor (sells below Tier X)", null).ToString();
 			this._tradeGoodsText = new TextObject("{=ATTradeGoods}Trade Goods", null).ToString();
 			this._tradeConsumablesText = new TextObject("{=ATTradeConsumables}Trade Consumables", null).ToString();
 			this._tradeLivestockText = new TextObject("{=ATTradeLivestock}Trade Livestock", null).ToString();
 
-			this._showAdvancedValue = AutoTraderConfig.ShowAdvancedOptions;
 			this._useWeightedValue = AutoTraderConfig.UseWeightedValue;
 			this._simpleAIValue = AutoTraderConfig.SimpleTradingAI;
 			this._buyThresholdValue = AutoTraderConfig.BuyThresholdValue;
@@ -191,8 +187,8 @@ namespace AutoTrader
 			this._sellConsumablesValue = AutoTraderConfig.SellConsumablesValue;
 			this._sellLivestockValue = AutoTraderConfig.SellLivestockValue;
 
-			this._isWeightedActive = (!this._simpleAIValue && this._showAdvancedValue);
-			this._isSearchRadiusActive = (!this._simpleAIValue && this._showAdvancedValue && !this._useWeightedValue);
+			this._isWeightedActive = !this._simpleAIValue;
+			this._isSearchRadiusActive = (!this._simpleAIValue && !this._useWeightedValue);
 
 			this.RefreshValues();
 		}
@@ -217,13 +213,12 @@ namespace AutoTrader
 			this.WeaponTierValueAsString = this.WeaponTierValue.ToString();
 			this.ArmorTierValueAsString = this.ArmorTierValue.ToString();
 
-			this.IsWeightedActive = (!this._simpleAIValue && this._showAdvancedValue);
-			this.IsSearchRadiusActive = (!this._simpleAIValue && this._showAdvancedValue && !this._useWeightedValue);
+			this.IsWeightedActive = (!this._simpleAIValue);
+			this.IsSearchRadiusActive = (!this._simpleAIValue && !this._useWeightedValue);
 		}
 
 		private void ExecuteDone()
 		{
-			AutoTraderConfig.ShowAdvancedOptions = this._showAdvancedValue;
 			AutoTraderConfig.UseWeightedValue = this._useWeightedValue;
 			AutoTraderConfig.SimpleTradingAI = this._simpleAIValue;
 			AutoTraderConfig.BuyThresholdValue = (int)this.BuyThresholdValue;
@@ -273,23 +268,23 @@ namespace AutoTrader
 
 		private void ExecutePresetDefault()
 		{
-			this.SimpleAIValue = false;
+			this.SimpleAIValue = true;
 
 			this.BuyThresholdValue = 85.0f;
 			this.SellThresholdValue = 95.0f;
-			this.UseWeightedValue = true;
+			this.UseWeightedValue = false;
 			this.MaxCapacityValue = 15.0f;
 			this.KeepGrainsValue = 10.0f;
 			this.KeepConsumablesValue = 4.0f;
 			this.UseInventorySpaceValue = 90.0f;
-			this.KeepWagesValue = 3.0f;
+			this.KeepWagesValue = 5.0f;
 			this.SearchRadiusValue = 300.0f;
 			this.WeaponTierValue = 2.0f;
 			this.ArmorTierValue = 2.0f;
 
 			this.SellSmithingValue = false;
 			this.ResupplyHardwoodValue = false;
-			this.ResupplyValue = false;
+			this.ResupplyValue = true;
 
 			this.BuyHorsesValue = true;
 			this.SellHorsesValue = false;
@@ -301,7 +296,7 @@ namespace AutoTrader
 			this.SellGoodsValue = true;
 			this.BuyConsumablesValue = true;
 			this.SellConsumablesValue = true;
-			this.BuyLivestockValue = true;
+			this.BuyLivestockValue = false;
 			this.SellLivestockValue = true;
 
 			RefreshValues();
@@ -309,7 +304,6 @@ namespace AutoTrader
 
 		private void ExecutePresetSeller()
 		{
-			this.ShowAdvancedValue = true;
 			this.WeaponTierValue = 3.0f;
 			this.ArmorTierValue = 3.0f;
 			this.SellSmithingValue = false;
@@ -350,7 +344,7 @@ namespace AutoTrader
 			this.SimpleAIValue = false;
 
 			this.SearchRadiusValue = 300.0f;
-			this.UseWeightedValue = false;
+			this.UseWeightedValue = true;
 
 			this.BuyHorsesValue = true;
 			this.BuyGoodsValue = true;
@@ -359,15 +353,6 @@ namespace AutoTrader
 			this.SellConsumablesValue = true;
 
 			RefreshValues();
-		}
-
-		[DataSourceProperty]
-		public string ShowAdvancedText
-		{
-			get
-			{
-				return this._showAdvancedText;
-			}
 		}
 
 		[DataSourceProperty]
@@ -725,24 +710,6 @@ namespace AutoTrader
 					this._isWeightedActive = value;
 					RefreshValues();
 					base.OnPropertyChanged("IsWeightedActive");
-				}
-			}
-		}
-
-		[DataSourceProperty]
-		public bool ShowAdvancedValue
-		{
-			get
-			{
-				return this._showAdvancedValue;
-			}
-			set
-			{
-				if (value != this._showAdvancedValue)
-				{
-					this._showAdvancedValue = value;
-					RefreshValues();
-					base.OnPropertyChanged("ShowAdvancedValue");
 				}
 			}
 		}

@@ -11,13 +11,14 @@ namespace AutoTrader
     {
         private static PlatformFilePath _configFile;
 
+        public static string AutoTraderGameVersion { get; } = "e1.7.1";
+
         public static int MaxKeepGrainsValue { get; set; } = 500;
 
-        public static bool ShowAdvancedOptions { get; set; } = false;
         public static int BuyThresholdValue { get; set; } = 90;
         public static int SellThresholdValue { get; set; } = 100;
-        public static bool SimpleTradingAI { get; set; } = false;
-        public static bool UseWeightedValue { get; set; } = true;
+        public static bool SimpleTradingAI { get; set; } = true;
+        public static bool UseWeightedValue { get; set; } = false;
         public static int MaxCapacityValue { get; set; } = 15;
         public static int KeepGrainsValue { get; set; } = 10;
         public static int KeepConsumablesValue { get; set; } = 4;
@@ -29,7 +30,7 @@ namespace AutoTrader
 
         public static bool SellSmithingValue { get; set; } = false;
         public static bool ResupplyHardwoodValue { get; set; } = false;
-        public static bool ResupplyValue { get; set; } = false;
+        public static bool ResupplyValue { get; set; } = true;
 
         public static bool BuyHorsesValue { get; set; } = true;
         public static bool SellHorsesValue { get; set; } = false;
@@ -41,7 +42,7 @@ namespace AutoTrader
         public static bool SellGoodsValue { get; set; } = true;
         public static bool BuyConsumablesValue { get; set; } = true;
         public static bool SellConsumablesValue { get; set; } = true;
-        public static bool BuyLivestockValue { get; set; } = true;
+        public static bool BuyLivestockValue { get; set; } = false;
         public static bool SellLivestockValue { get; set; } = true;
 
         public static int Version { get; set; } = 2;
@@ -200,10 +201,6 @@ namespace AutoTrader
                         {
                             AutoTraderConfig.SellLivestockValue = Boolean.Parse(textReader.ReadString());
                         }
-                        else if (textReader.Name == "showAdvancedOptions")
-                        {
-                            AutoTraderConfig.ShowAdvancedOptions = Boolean.Parse(textReader.ReadString());
-                        }
                         else if (textReader.Name == "debugMode")
                         {
                             AutoTraderConfig.DebugMode = Boolean.Parse(textReader.ReadString());
@@ -260,8 +257,6 @@ namespace AutoTrader
                 textWriter.WriteElementString("sellConsumablesValue", AutoTraderConfig.SellConsumablesValue.ToString());
                 textWriter.WriteElementString("buyLivestockValue", AutoTraderConfig.BuyLivestockValue.ToString());
                 textWriter.WriteElementString("sellLivestockValue", AutoTraderConfig.SellLivestockValue.ToString());
-
-                textWriter.WriteElementString("showAdvancedOptions", AutoTraderConfig.ShowAdvancedOptions.ToString());
 
                 textWriter.WriteElementString("debugMode", AutoTraderConfig.DebugMode.ToString());
 

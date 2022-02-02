@@ -29,6 +29,9 @@ namespace AutoTrader
         private static int _availableMerchantGold;
         private static bool _isCaravan;
 
+        private static List<string> _soldItems;
+        private static List<string> _boughtItems;
+
         public static void PerformAutoTrade(bool isCaravan = false)
         {
             _isCaravan = isCaravan;
@@ -37,6 +40,8 @@ namespace AutoTrader
             IsTradingActive = true;
             try
             {
+                InitMerchantType();
+
                 if (!InitInventory())
                 {
                     AutoTraderHelpers.PrintDebugMessage("Failed to initialize the inventory!");
@@ -70,9 +75,10 @@ namespace AutoTrader
             int troopWage = PartyBase.MainParty.MobileParty.TotalWage; // ToDo: whole daily 
             _availablePlayerGold = initialGold - (AutoTraderConfig.KeepWagesValue * troopWage);
 
-            UpdateAvailableInventoryCapacity();
+            _soldItems = new List<string>();
+            _boughtItems = new List<string>();
 
-            InitMerchantType();
+            UpdateAvailableInventoryCapacity();
             InitMerchantGold();
 
             // Locks
@@ -157,6 +163,7 @@ namespace AutoTrader
 
                 int amount = itemRosterElement.Amount;
 
+                // TODO: Change on simple AI
                 float averagePrice = GetAveragePrice(itemRosterElement);
 
                 // Sell items one by one
@@ -179,6 +186,9 @@ namespace AutoTrader
         private static void Restock()
         {
             IsBuying = true;
+
+            if (!AutoTraderConfig.ResupplyValue)
+                return;
 
             ItemRoster merchantItemRoster = GetMerchantItemRoster();
 
@@ -225,9 +235,13 @@ namespace AutoTrader
                 // Check if its filtered
                 if (IsItemFiltered(itemRosterElement)) continue;
 
-                float averagePrice = GetAveragePrice(itemRosterElement);
+                IPlayerTradeBehavior campaignBehavior = Campaign.Current.GetCampaignBehavior<IPlayerTradeBehavior>();
                 int buyoutPrice = _inventoryLogic.GetItemPrice(itemRosterElement, IsBuying);
-                float profit = averagePrice - (float)buyoutPrice;
+                float averagePrice = GetAveragePrice(itemRosterElement);
+                float profit = campaignBehavior.GetProjectedProfit(itemRosterElement, buyoutPrice);
+                if (profit == buyoutPrice)
+                    profit = averagePrice - (float)buyoutPrice;
+                // TODO no good place for average price
 
                 itemBuyList.Add(new KeyValuePair<ItemRosterElement, KeyValuePair<float, float>> (
                     itemRosterElement, new KeyValuePair<float, float>(averagePrice, profit)));
@@ -320,6 +334,18 @@ namespace AutoTrader
                 IsBuying ? InventoryLogic.InventorySide.PlayerInventory : InventoryLogic.InventorySide.OtherInventory, 
                 itemRosterElement, EquipmentIndex.None, EquipmentIndex.None, CharacterObject.PlayerCharacter, true);
 
+            // Mark the item
+            string name = itemRosterElement.EquipmentElement.Item.GetName().ToString();
+            if (IsBuying)
+            {
+                if (!_boughtItems.Exists(x => x == name))
+                    _boughtItems.Add(name);
+            } else
+            {
+                if (!_soldItems.Exists(x => x == name))
+                    _soldItems.Add(name);
+            }
+
             // Update available weight
             UpdateAvailableInventoryCapacity();
 
@@ -357,8 +383,17 @@ namespace AutoTrader
             // Price niveau
             if (AutoTraderConfig.SimpleTradingAI)
             {
-                if (!SimpleWorthCheck(itemRosterElement.EquipmentElement.Item.Value, buyoutPrice))
+                float averagePriceFactorItemCategory = _inventoryLogic.GetAveragePriceFactorItemCategory(itemRosterElement.EquipmentElement.Item.ItemCategory);
+                Town town = Settlement.CurrentSettlement.IsVillage ? Settlement.CurrentSettlement.Village.Bound.Town : Settlement.CurrentSettlement.Town;
+                if (averagePriceFactorItemCategory != -99.0)
+                {
+                    float price_factor = town.MarketData.GetPriceFactor(itemRosterElement.EquipmentElement.Item.ItemCategory, false);
+                    if (price_factor > averagePriceFactorItemCategory * 0.95)
+                        return false;
+                } else {
+                    AutoTraderHelpers.PrintDebugMessage("No average price found for " + itemRosterElement.ToString());
                     return false;
+                }
             }
             else
             {
@@ -421,11 +456,7 @@ namespace AutoTrader
                 int amountToKeep = itemObject == DefaultItems.Grain ?
                     AutoTraderConfig.KeepGrainsValue : AutoTraderConfig.KeepConsumablesValue;
 
-                // Consider max setting
-                if (itemObject == DefaultItems.Grain && amountToKeep > 199)
-                    return false;
-
-                if (amountToKeep >= amount)
+                if (amountToKeep >= itemRosterElement.Amount)
                 {
                     return false;
                 }
@@ -442,8 +473,25 @@ namespace AutoTrader
 
             if (AutoTraderConfig.SimpleTradingAI)
             {
-                if (!SimpleWorthCheck(itemRosterElement.EquipmentElement.Item.Value, buyoutPrice))
+                IPlayerTradeBehavior campaignBehavior = Campaign.Current.GetCampaignBehavior<IPlayerTradeBehavior>();
+                if (campaignBehavior != null)
+                {
+                    int weighted_profit = buyoutPrice - campaignBehavior.GetProjectedProfit(itemRosterElement, buyoutPrice);
+                    // Check case of no trade rumours
+                    if(weighted_profit == 0)
+                    {
+                        float priceFactor = (float)buyoutPrice / averagePrice;
+                        if (priceFactor <= 1.05f)
+                            return false;
+                    } else if (weighted_profit > buyoutPrice * 0.95)
+                        return false;
+                    
+                } else
+                {
+                    AutoTraderHelpers.PrintDebugMessage("AutoTrader: Missing PlayerTradeBehavior!");
                     return false;
+                }
+                    
             }
             else
             {
@@ -585,6 +633,17 @@ namespace AutoTrader
             // Filter by lock
             if (IsItemLocked(itemRosterElement))
                 return true;
+
+            // Check if already bought / sold
+            if (IsBuying)
+            {
+                if (_soldItems.Exists(x => x == itemRosterElement.EquipmentElement.Item.GetName().ToString()))
+                    return true;
+            } else
+            {
+                if (_boughtItems.Exists(x => x == itemRosterElement.EquipmentElement.Item.GetName().ToString()))
+                    return true;
+            }
 
             // Exclude horses when buying for now
             if (AutoTraderHelpers.IsHorse(itemObject) && IsBuying)
