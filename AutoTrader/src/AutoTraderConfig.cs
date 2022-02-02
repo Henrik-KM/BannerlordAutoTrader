@@ -20,17 +20,21 @@ namespace AutoTrader
         public static bool SimpleTradingAI { get; set; } = true;
         public static bool UseWeightedValue { get; set; } = false;
         public static int MaxCapacityValue { get; set; } = 15;
-        public static int KeepGrainsValue { get; set; } = 10;
-        public static int KeepConsumablesValue { get; set; } = 4;
+        public static int KeepGrainsMinValue { get; set; } = 10;
+        public static int KeepGrainsMaxValue { get; set; } = 100;
+        public static int KeepConsumablesMinValue { get; set; } = 4;
+        public static int KeepConsumablesMaxValue { get; set; } = 20;
         public static int UseInventorySpaceValue { get; set; } = 90;
         public static int KeepWagesValue { get; set; } = 3;
         public static int SearchRadiusValue { get; set; } = 300;
-        public static int WeaponTierValue { get; set; } = 2;
-        public static int ArmorTierValue { get; set; } = 2;
+        public static int WeaponsArmorTierValue { get; set; } = 2;
 
+        public static bool UseAltATValue { get; set; } = false;
         public static bool SellSmithingValue { get; set; } = false;
+        public static bool KeepSmeltingValue { get; set; } = false;
         public static bool ResupplyHardwoodValue { get; set; } = false;
         public static bool ResupplyValue { get; set; } = true;
+        public static bool JunkCattleValue { get; set; } = false;
 
         public static bool BuyHorsesValue { get; set; } = true;
         public static bool SellHorsesValue { get; set; } = false;
@@ -113,13 +117,21 @@ namespace AutoTrader
                         {
                             AutoTraderConfig.MaxCapacityValue = Int32.Parse(textReader.ReadString());
                         }
-                        else if (textReader.Name == "keepGrainsValue")
+                        else if (textReader.Name == "keepGrainsMinValue")
                         {
-                            AutoTraderConfig.KeepGrainsValue = Int32.Parse(textReader.ReadString());
+                            AutoTraderConfig.KeepGrainsMinValue = Int32.Parse(textReader.ReadString());
                         }
-                        else if (textReader.Name == "keepConsumablesValue")
+                        else if (textReader.Name == "keepGrainsMaxValue")
                         {
-                            AutoTraderConfig.KeepConsumablesValue = Int32.Parse(textReader.ReadString());
+                            AutoTraderConfig.KeepGrainsMaxValue = Int32.Parse(textReader.ReadString());
+                        }
+                        else if (textReader.Name == "keepConsumablesMinValue")
+                        {
+                            AutoTraderConfig.KeepConsumablesMinValue = Int32.Parse(textReader.ReadString());
+                        }
+                        else if (textReader.Name == "keepConsumablesMaxValue")
+                        {
+                            AutoTraderConfig.KeepConsumablesMaxValue = Int32.Parse(textReader.ReadString());
                         }
                         else if (textReader.Name == "useInventorySpaceValue")
                         {
@@ -129,13 +141,9 @@ namespace AutoTrader
                         {
                             AutoTraderConfig.SearchRadiusValue = Int32.Parse(textReader.ReadString());
                         }
-                        else if (textReader.Name == "weaponTierValue")
+                        else if (textReader.Name == "weaponsArmorTierValue")
                         {
-                            AutoTraderConfig.WeaponTierValue = Int32.Parse(textReader.ReadString());
-                        }
-                        else if (textReader.Name == "armorTierValue")
-                        {
-                            AutoTraderConfig.ArmorTierValue = Int32.Parse(textReader.ReadString());
+                            AutoTraderConfig.WeaponsArmorTierValue = Int32.Parse(textReader.ReadString());
                         }
                         else if (textReader.Name == "keepWagesValue")
                         {
@@ -145,9 +153,21 @@ namespace AutoTrader
                         {
                             AutoTraderConfig.ResupplyValue = Boolean.Parse(textReader.ReadString());
                         }
+                        else if (textReader.Name == "useAltATValue")
+                        {
+                            AutoTraderConfig.UseAltATValue = Boolean.Parse(textReader.ReadString());
+                        }
+                        else if (textReader.Name == "junkCattleValue")
+                        {
+                            AutoTraderConfig.JunkCattleValue = Boolean.Parse(textReader.ReadString());
+                        }
                         else if (textReader.Name == "sellSmithingValue")
                         {
                             AutoTraderConfig.SellSmithingValue = Boolean.Parse(textReader.ReadString());
+                        }
+                        else if (textReader.Name == "keepSmeltingValue")
+                        {
+                            AutoTraderConfig.KeepSmeltingValue = Boolean.Parse(textReader.ReadString());
                         }
                         else if (textReader.Name == "resupplyHardwoodValue")
                         {
@@ -233,16 +253,20 @@ namespace AutoTrader
                 textWriter.WriteElementString("buyThresholdValue", AutoTraderConfig.BuyThresholdValue.ToString());
                 textWriter.WriteElementString("sellThresholdValue", AutoTraderConfig.SellThresholdValue.ToString());
                 textWriter.WriteElementString("maxCapacityValue", AutoTraderConfig.MaxCapacityValue.ToString());
-                textWriter.WriteElementString("keepGrainsValue", AutoTraderConfig.KeepGrainsValue.ToString());
-                textWriter.WriteElementString("keepConsumablesValue", AutoTraderConfig.KeepConsumablesValue.ToString());
+                textWriter.WriteElementString("keepGrainsMinValue", AutoTraderConfig.KeepGrainsMinValue.ToString());
+                textWriter.WriteElementString("keepGrainsMaxValue", AutoTraderConfig.KeepGrainsMaxValue.ToString());
+                textWriter.WriteElementString("keepConsumablesMinValue", AutoTraderConfig.KeepConsumablesMinValue.ToString());
+                textWriter.WriteElementString("keepConsumablesMaxValue", AutoTraderConfig.KeepConsumablesMaxValue.ToString());
                 textWriter.WriteElementString("useInventorySpaceValue", AutoTraderConfig.UseInventorySpaceValue.ToString());
                 textWriter.WriteElementString("keepWagesValue", AutoTraderConfig.KeepWagesValue.ToString());
                 textWriter.WriteElementString("searchRadiusValue", AutoTraderConfig.SearchRadiusValue.ToString());
-                textWriter.WriteElementString("weaponTierValue", AutoTraderConfig.WeaponTierValue.ToString());
-                textWriter.WriteElementString("armorTierValue", AutoTraderConfig.ArmorTierValue.ToString());
+                textWriter.WriteElementString("weaponsArmorTierValue", AutoTraderConfig.WeaponsArmorTierValue.ToString());
 
+                textWriter.WriteElementString("useAltATValue", AutoTraderConfig.UseAltATValue.ToString());
+                textWriter.WriteElementString("junkCattleValue", AutoTraderConfig.JunkCattleValue.ToString());
                 textWriter.WriteElementString("resupplyValue", AutoTraderConfig.ResupplyValue.ToString());
                 textWriter.WriteElementString("sellSmithingValue", AutoTraderConfig.SellSmithingValue.ToString());
+                textWriter.WriteElementString("keepSmeltingValue", AutoTraderConfig.KeepSmeltingValue.ToString());
                 textWriter.WriteElementString("resupplyHardwoodValue", AutoTraderConfig.ResupplyHardwoodValue.ToString());
 
                 textWriter.WriteElementString("buyHorsesValue", AutoTraderConfig.BuyHorsesValue.ToString());

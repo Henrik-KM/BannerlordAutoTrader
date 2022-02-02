@@ -26,11 +26,19 @@ namespace AutoTrader
 
 		public override void OnGameInitializationFinished(Game game)
 		{
-			AutoTraderHelpers.PrintMessage("Thanks for using AutoTrader! Press <ALT + A + T> to open the settings menu.");
+			string t_text = AutoTraderConfig.UseAltATValue ? " + T" : "";
+			AutoTraderHelpers.PrintMessage(new TextObject("{=ATStartup01}Thanks for using AutoTrader! Press <ALT + A", null)
+				+ t_text
+				+ new TextObject("{=ATStartup02}> to open the settings menu", null).ToString());
+
 			string version = ApplicationVersion.FromParametersFile(ApplicationVersionGameType.Singleplayer).ToString().Substring(0, 6);
 
 			if (!version.Equals(AutoTraderConfig.AutoTraderGameVersion)){
-				AutoTraderHelpers.PrintMessage("You are using AutoTrader for " + AutoTraderConfig.AutoTraderGameVersion + " with Bannerlord " + version + ". If you encounter issues please check the mod page for a fitting version.");
+				AutoTraderHelpers.PrintMessage(new TextObject("{=ATVersionMismatch01}You are using AutoTrader for ", null).ToString()
+					+ AutoTraderConfig.AutoTraderGameVersion
+					+ new TextObject("{=ATVersionMismatch02} with Bannerlord ", null).ToString() 
+					+ version
+					+ new TextObject("{=ATVersionMismatch03}. If you encounter issues please check the mod page for a fitting version.", null).ToString());
 			}
 		}
 
@@ -46,7 +54,7 @@ namespace AutoTrader
 			{
 				if(Input.IsKeyDown(InputKey.LeftAlt) 
 					&& Input.IsKeyDown(InputKey.A) 
-					&& Input.IsKeyDown(InputKey.T)
+					&& (!AutoTraderConfig.UseAltATValue || Input.IsKeyDown(InputKey.T))
 					&& Game.Current.GameStateManager.ActiveState.GetType() == typeof(MapState)
 					&& Game.Current.GameStateManager.ActiveState.IsMenuState == false
 					&& Game.Current.GameStateManager.ActiveState.IsMission == false)

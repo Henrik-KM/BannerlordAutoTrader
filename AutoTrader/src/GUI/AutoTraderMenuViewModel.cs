@@ -34,15 +34,19 @@ namespace AutoTrader
 		private string _buyThresholdText;
 		private string _sellThresholdText;
 		private string _maxCapacityText;
-		private string _keepGrainsText;
-		private string _keepConsumablesText;
+		private string _keepGrainsMinText;
+		private string _keepGrainsMaxText;
+		private string _keepConsumablesMinText;
+		private string _keepConsumablesMaxText;
 		private string _useInventorySpaceText;
 		private string _keepWagesText;
 		private string _searchRadiusText;
-		private string _weaponTierText;
-		private string _armorTierText;
+		private string _weaponsArmorTierText;
 
+		private string _useAltATText;
+		private string _junkCattleText;
 		private string _sellSmithingText;
+		private string _keepSmeltingText;
 		private string _resupplyHardwoodText;
 		private string _resupplyText;
 
@@ -63,11 +67,15 @@ namespace AutoTrader
 		private float _maxCapacityValue;
 		private string _maxCapacityValueAsString;
 
-		private float _keepGrainsValue;
-		private string _keepGrainsValueAsString;
+		private float _keepGrainsMinValue;
+		private float _keepGrainsMaxValue;
+		private string _keepGrainsMinValueAsString;
+		private string _keepGrainsMaxValueAsString;
 
-		private float _keepConsumablesValue;
-		private string _keepConsumablesValueAsString;
+		private float _keepConsumablesMinValue;
+		private float _keepConsumablesMaxValue;
+		private string _keepConsumablesMinValueAsString;
+		private string _keepConsumablesMaxValueAsString;
 
 		private float _useInventorySpaceValue;
 		private string _useInventorySpaceValueAsString;
@@ -78,16 +86,16 @@ namespace AutoTrader
 		private float _searchRadiusValue;
 		private string _searchRadiusValueAsString;
 
-		private float _weaponTierValue;
-		private string _weaponTierValueAsString;
-
-		private float _armorTierValue;
-		private string _armorTierValueAsString;
+		private float _weaponsArmorTierValue;
+		private string _weaponsArmorTierValueAsString;
 
 		private bool _useWeightedValue;
 		private bool _simpleAIValue;
 
+		private bool _useAltATValue;
+		private bool _junkCattleValue;
 		private bool _sellSmithingValue;
+		private bool _keepSmeltingValue;
 		private bool _resupplyHardwoodValue;
 		private bool _resupplyValue;
 
@@ -133,19 +141,23 @@ namespace AutoTrader
 			this._headerTradeText = new TextObject("{=ATHeaderTrade}Buy / Sell Options", null).ToString();
 
 			this._useWeightedText = new TextObject("{=ATWeightedRadius}Weight average price by distance", null).ToString();
-			this._simpleAIText = new TextObject("{=ATSimpleAI}Green/red-based trading (recommended, improves with trade rumors)", null).ToString();
+			this._simpleAIText = new TextObject("{=ATSimpleAI}Green/red-based trading (improves with trade rumors)", null).ToString();
 			this._buyThresholdText = new TextObject("{=ATBuyThreshold}Buy under X% of the average price", null).ToString();
 			this._sellThresholdText = new TextObject("{=ATSellThreshold}Sell above X% of the average price", null).ToString();
 			this._maxCapacityText = new TextObject("{=ATMaxCapacity}Maximum % of inventory filled by the same good", null).ToString();
-			this._keepGrainsText = new TextObject("{=ATKeepGrains}Amount of grain to keep", null).ToString();
-			this._keepConsumablesText = new TextObject("{=ATKeepConsumables}Amount of each other consumable to keep", null).ToString();
+			this._keepGrainsMinText = new TextObject("{=ATKeepGrainsMin}Minimum amount of grain to keep", null).ToString();
+			this._keepGrainsMaxText = new TextObject("{=ATKeepGrainsMax}Maximum amount of grain to keep", null).ToString();
+			this._keepConsumablesMinText = new TextObject("{=ATKeepConsumablesMin}Minimum amount of other consumables to keep", null).ToString();
+			this._keepConsumablesMaxText = new TextObject("{=ATKeepConsumablesMax}Maximum amount of other consumables to keep", null).ToString();
 			this._useInventorySpaceText = new TextObject("{=ATUseInventorySpace}Total % of inventory space the mod may use", null).ToString();
 			this._keepWagesText = new TextObject("{=ATKeepWages}Keep enough gold for X days of troop wages", null).ToString();
 			this._searchRadiusText = new TextObject("{=ATSearchRadius}Average price search radius", null).ToString();
-			this._weaponTierText = new TextObject("{=ATWeaponTier}Sell weapons of tier X and below", null).ToString();
-			this._armorTierText = new TextObject("{=ATArmorTier}Sell armor of tier X and below", null).ToString();
+			this._weaponsArmorTierText = new TextObject("{=ATWeaponsArmorTier}Sell weapons and armor of tier X and below", null).ToString();
 
+			this._useAltATText = new TextObject("{=ATAltAT}Use hotkey <Alt + A + T> instead of <Alt + A>", null).ToString();
+			this._junkCattleText = new TextObject("{=ATJunkCattle}Always sell all cattle", null).ToString();
 			this._sellSmithingText = new TextObject("{=ATSellSmithing}Sell charcoal and ingots", null).ToString();
+			this._keepSmeltingText = new TextObject("{=ATKeepSmelting}Keep smeltable weapons", null).ToString();
 			this._resupplyHardwoodText = new TextObject("{=ATResupplyHardwood}Resupply hardwood to 'keep consumables' value", null).ToString();
 			this._resupplyText = new TextObject("{=ATResupply}Resupply food to 'keep consumables' value", null).ToString();
 
@@ -161,13 +173,14 @@ namespace AutoTrader
 			this._buyThresholdValue = AutoTraderConfig.BuyThresholdValue;
 			this._sellThresholdValue = AutoTraderConfig.SellThresholdValue;
 			this._maxCapacityValue = AutoTraderConfig.MaxCapacityValue;
-			this._keepGrainsValue = AutoTraderConfig.KeepGrainsValue;
-			this._keepConsumablesValue = AutoTraderConfig.KeepConsumablesValue;
+			this._keepGrainsMinValue = AutoTraderConfig.KeepGrainsMinValue;
+			this._keepGrainsMaxValue = AutoTraderConfig.KeepGrainsMaxValue;
+			this._keepConsumablesMinValue = AutoTraderConfig.KeepConsumablesMinValue;
+			this._keepConsumablesMinValue = AutoTraderConfig.KeepConsumablesMaxValue;
 			this._useInventorySpaceValue = AutoTraderConfig.UseInventorySpaceValue;
 			this._keepWagesValue = AutoTraderConfig.KeepWagesValue;
 			this._searchRadiusValue = AutoTraderConfig.SearchRadiusValue;
-			this._weaponTierValue = AutoTraderConfig.WeaponTierValue;
-			this._armorTierValue = AutoTraderConfig.ArmorTierValue;
+			this._weaponsArmorTierValue = AutoTraderConfig.WeaponsArmorTierValue;
 
 			this._buyHorsesValue = AutoTraderConfig.BuyHorsesValue;
 			this._buyWeaponsValue = AutoTraderConfig.BuyWeaponsValue;
@@ -176,7 +189,10 @@ namespace AutoTrader
 			this._buyConsumablesValue = AutoTraderConfig.BuyConsumablesValue;
 			this._buyLivestockValue = AutoTraderConfig.BuyLivestockValue;
 
+			this._useAltATValue = AutoTraderConfig.UseAltATValue;
+			this._junkCattleValue = AutoTraderConfig.JunkCattleValue;
 			this._sellSmithingValue = AutoTraderConfig.SellSmithingValue;
+			this._keepSmeltingValue = AutoTraderConfig.KeepSmeltingValue;
 			this._resupplyHardwoodValue = AutoTraderConfig.ResupplyHardwoodValue;
 			this._resupplyValue = AutoTraderConfig.ResupplyValue;
 
@@ -199,19 +215,20 @@ namespace AutoTrader
 			this.BuyThresholdValueAsString = this.BuyThresholdValue.ToString();
 			this.SellThresholdValueAsString = this.SellThresholdValue.ToString();
 			this.MaxCapacityValueAsString = this.MaxCapacityValue.ToString();
-			if (this.KeepGrainsValue >= AutoTraderConfig.MaxKeepGrainsValue)
-				this.KeepGrainsValueAsString = new TextObject("{=ATAll}All", null).ToString();
+			this.KeepGrainsMinValueAsString = this.KeepGrainsMinValue.ToString();
+			if (this.KeepGrainsMaxValue >= AutoTraderConfig.MaxKeepGrainsValue)
+				this.KeepGrainsMaxValueAsString = new TextObject("{=ATAll}All", null).ToString();
 			else
-				this.KeepGrainsValueAsString = this.KeepGrainsValue.ToString();
-			this.KeepConsumablesValueAsString = this.KeepConsumablesValue.ToString();
+				this.KeepGrainsMaxValueAsString = this.KeepGrainsMaxValue.ToString();
+			this.KeepConsumablesMinValueAsString = this.KeepConsumablesMinValue.ToString();
+			this.KeepConsumablesMaxValueAsString = this.KeepConsumablesMaxValue.ToString();
 			this.UseInventorySpaceValueAsString = this.UseInventorySpaceValue.ToString();
 			this.KeepWagesValueAsString = this.KeepWagesValue.ToString();
 			if (this.SearchRadiusValue > 999.0f)
 				this.SearchRadiusValueAsString = this.InfText;
 			else
 				this.SearchRadiusValueAsString = this.SearchRadiusValue.ToString();
-			this.WeaponTierValueAsString = this.WeaponTierValue.ToString();
-			this.ArmorTierValueAsString = this.ArmorTierValue.ToString();
+			this.WeaponsArmorTierValueAsString = this.WeaponsArmorTierValue.ToString();
 
 			this.IsWeightedActive = (!this._simpleAIValue);
 			this.IsSearchRadiusActive = (!this._simpleAIValue && !this._useWeightedValue);
@@ -224,13 +241,14 @@ namespace AutoTrader
 			AutoTraderConfig.BuyThresholdValue = (int)this.BuyThresholdValue;
 			AutoTraderConfig.SellThresholdValue = (int)this.SellThresholdValue;
 			AutoTraderConfig.MaxCapacityValue = (int)this.MaxCapacityValue;
-			AutoTraderConfig.KeepGrainsValue = (int)this.KeepGrainsValue;
-			AutoTraderConfig.KeepConsumablesValue = (int)this.KeepConsumablesValue;
+			AutoTraderConfig.KeepGrainsMinValue = (int)this.KeepGrainsMinValue;
+			AutoTraderConfig.KeepGrainsMaxValue = (int)this.KeepGrainsMaxValue;
+			AutoTraderConfig.KeepConsumablesMinValue = (int)this.KeepConsumablesMinValue;
+			AutoTraderConfig.KeepConsumablesMaxValue = (int)this.KeepConsumablesMaxValue;
 			AutoTraderConfig.UseInventorySpaceValue = (int)this.UseInventorySpaceValue;
 			AutoTraderConfig.KeepWagesValue = (int)this.KeepWagesValue;
 			AutoTraderConfig.SearchRadiusValue = (int)this.SearchRadiusValue;
-			AutoTraderConfig.WeaponTierValue = (int)this.WeaponTierValue;
-			AutoTraderConfig.ArmorTierValue = (int)this.ArmorTierValue;
+			AutoTraderConfig.WeaponsArmorTierValue = (int)this.WeaponsArmorTierValue;
 
 			AutoTraderConfig.BuyHorsesValue = this.BuyHorsesValue;
 			AutoTraderConfig.BuyArmorValue = this.BuyArmorValue;
@@ -239,7 +257,10 @@ namespace AutoTrader
 			AutoTraderConfig.BuyConsumablesValue = this.BuyConsumablesValue;
 			AutoTraderConfig.BuyLivestockValue = this.BuyLivestockValue;
 
+			AutoTraderConfig.UseAltATValue = this.UseAltATValue;
+			AutoTraderConfig.JunkCattleValue = this.JunkCattleValue;
 			AutoTraderConfig.SellSmithingValue = this.SellSmithingValue;
+			AutoTraderConfig.KeepSmeltingValue = this.KeepSmeltingValue;
 			AutoTraderConfig.ResupplyHardwoodValue = this.ResupplyHardwoodValue;
 			AutoTraderConfig.ResupplyValue = this.ResupplyValue;
 
@@ -274,15 +295,18 @@ namespace AutoTrader
 			this.SellThresholdValue = 95.0f;
 			this.UseWeightedValue = false;
 			this.MaxCapacityValue = 15.0f;
-			this.KeepGrainsValue = 10.0f;
-			this.KeepConsumablesValue = 4.0f;
+			this.KeepGrainsMinValue = 10.0f;
+			this.KeepGrainsMaxValue = 100.0f;
+			this.KeepConsumablesMinValue = 4.0f;
+			this.KeepConsumablesMaxValue = 20.0f;
 			this.UseInventorySpaceValue = 90.0f;
 			this.KeepWagesValue = 5.0f;
 			this.SearchRadiusValue = 300.0f;
-			this.WeaponTierValue = 2.0f;
-			this.ArmorTierValue = 2.0f;
+			this.WeaponsArmorTierValue = 2.0f;
 
+			this.JunkCattleValue = false;
 			this.SellSmithingValue = false;
+			this.KeepSmeltingValue = false;
 			this.ResupplyHardwoodValue = false;
 			this.ResupplyValue = true;
 
@@ -304,9 +328,9 @@ namespace AutoTrader
 
 		private void ExecutePresetSeller()
 		{
-			this.WeaponTierValue = 3.0f;
-			this.ArmorTierValue = 3.0f;
+			this.WeaponsArmorTierValue = 3.0f;
 			this.SellSmithingValue = false;
+			this.KeepSmeltingValue = false;
 			this.BuyHorsesValue = false;
 			this.SellHorsesValue = true;
 			this.BuyWeaponsValue = false;
@@ -319,6 +343,7 @@ namespace AutoTrader
 			this.SellConsumablesValue = false;
 			this.BuyLivestockValue = false;
 			this.SellLivestockValue = false;
+			this.JunkCattleValue = true;
 
 			RefreshValues();
 		}
@@ -599,20 +624,29 @@ namespace AutoTrader
 		}
 
 		[DataSourceProperty]
-		public string WeaponTierText
+		public string WeaponsArmorTierText
 		{
 			get
 			{
-				return this._weaponTierText;
+				return this._weaponsArmorTierText;
 			}
 		}
 
 		[DataSourceProperty]
-		public string ArmorTierText
+		public string UseAltATText
 		{
 			get
 			{
-				return this._armorTierText;
+				return this._useAltATText;
+			}
+		}
+
+		[DataSourceProperty]
+		public string JunkCattleText
+		{
+			get
+			{
+				return this._junkCattleText;
 			}
 		}
 
@@ -622,6 +656,15 @@ namespace AutoTrader
 			get
 			{
 				return this._sellSmithingText;
+			}
+		}
+
+		[DataSourceProperty]
+		public string KeepSmeltingText
+		{
+			get
+			{
+				return this._keepSmeltingText;
 			}
 		}
 
@@ -763,6 +806,45 @@ namespace AutoTrader
 		}
 
 		[DataSourceProperty]
+		public bool UseAltATValue
+		{
+			get
+			{
+				return this._useAltATValue;
+			}
+			set
+			{
+				if (value != this._useAltATValue)
+				{
+					this._useAltATValue = value;
+					base.OnPropertyChanged("UseAltATValue");
+				}
+			}
+		}
+
+		[DataSourceProperty]
+		public bool JunkCattleValue
+		{
+			get
+			{
+				return this._junkCattleValue;
+			}
+			set
+			{
+				if (value != this._junkCattleValue)
+				{
+					this._junkCattleValue = value;
+                    if (value)
+                    {
+						this.BuyLivestockValue = false;
+						this.SellLivestockValue = true;
+                    }
+					base.OnPropertyChanged("JunkCattleValue");
+				}
+			}
+		}
+
+		[DataSourceProperty]
 		public bool SellSmithingValue
 		{
 			get
@@ -775,6 +857,23 @@ namespace AutoTrader
 				{
 					this._sellSmithingValue = value;
 					base.OnPropertyChanged("SellSmithingValue");
+				}
+			}
+		}
+
+		[DataSourceProperty]
+		public bool KeepSmeltingValue
+		{
+			get
+			{
+				return this._keepSmeltingValue;
+			}
+			set
+			{
+				if (value != this._keepSmeltingValue)
+				{
+					this._keepSmeltingValue = value;
+					base.OnPropertyChanged("KeepSmeltingValue");
 				}
 			}
 		}
@@ -918,6 +1017,8 @@ namespace AutoTrader
 				if (value != this._buyLivestockValue)
 				{
 					this._buyLivestockValue = value;
+					if (value)
+						this.JunkCattleValue = false;
 					base.OnPropertyChanged("BuyLivestockValue");
 				}
 			}
@@ -1026,20 +1127,38 @@ namespace AutoTrader
 		}
 
 		[DataSourceProperty]
-		public string KeepGrainsText
+		public string KeepGrainsMinText
 		{
 			get
 			{
-				return this._keepGrainsText;
+				return this._keepGrainsMinText;
 			}
 		}
 
 		[DataSourceProperty]
-		public string KeepConsumablesText
+		public string KeepGrainsMaxText
 		{
 			get
 			{
-				return this._keepConsumablesText;
+				return this._keepGrainsMaxText;
+			}
+		}
+
+		[DataSourceProperty]
+		public string KeepConsumablesMinText
+		{
+			get
+			{
+				return this._keepConsumablesMinText;
+			}
+		}
+
+		[DataSourceProperty]
+		public string KeepConsumablesMaxText
+		{
+			get
+			{
+				return this._keepConsumablesMaxText;
 			}
 		}
 
@@ -1150,74 +1269,144 @@ namespace AutoTrader
 		}
 
 		[DataSourceProperty]
-		public float KeepGrainsValue
+		public float KeepGrainsMinValue
 		{
 			get
 			{
-				return this._keepGrainsValue;
+				return this._keepGrainsMinValue;
 			}
 			set
 			{
-				if (value != this._keepGrainsValue)
+				if (value != this._keepGrainsMinValue)
 				{
-					this._keepGrainsValue = value;
-					if (this._keepGrainsValue >= AutoTraderConfig.MaxKeepGrainsValue)
-						this.KeepGrainsValueAsString = new TextObject("{=ATAll}All", null).ToString();
+					this._keepGrainsMinValue = value;
+					this.KeepGrainsMinValueAsString = this.KeepGrainsMinValue.ToString();
+					base.OnPropertyChanged("KeepGrainsMinValue");
+				}
+			}
+		}
+
+		[DataSourceProperty]
+		public float KeepGrainsMaxValue
+		{
+			get
+			{
+				return this._keepGrainsMaxValue;
+			}
+			set
+			{
+				if (value != this._keepGrainsMaxValue)
+				{
+					this._keepGrainsMaxValue = value;
+					if (this._keepGrainsMaxValue >= AutoTraderConfig.MaxKeepGrainsValue)
+						this.KeepGrainsMaxValueAsString = new TextObject("{=ATAll}All", null).ToString();
 					else
-						this.KeepGrainsValueAsString = this.KeepGrainsValue.ToString();
-					base.OnPropertyChanged("KeepGrainsValue");
+						this.KeepGrainsMaxValueAsString = this.KeepGrainsMaxValue.ToString();
+					base.OnPropertyChanged("KeepGrainsMaxValue");
 				}
 			}
 		}
 
 		[DataSourceProperty]
-		public string KeepGrainsValueAsString
+		public string KeepGrainsMinValueAsString
 		{
 			get
 			{
-				return this._keepGrainsValueAsString;
+				return this._keepGrainsMinValueAsString;
 			}
 			set
 			{
-				if (value != this._keepGrainsValueAsString)
+				if (value != this._keepGrainsMinValueAsString)
 				{
-					this._keepGrainsValueAsString = value;
-					base.OnPropertyChanged("KeepGrainsValueAsString");
+					this._keepGrainsMinValueAsString = value;
+					base.OnPropertyChanged("KeepGrainsMinValueAsString");
 				}
 			}
 		}
 
 		[DataSourceProperty]
-		public float KeepConsumablesValue
+		public string KeepGrainsMaxValueAsString
 		{
 			get
 			{
-				return this._keepConsumablesValue;
+				return this._keepGrainsMaxValueAsString;
 			}
 			set
 			{
-				if (value != this._keepConsumablesValue)
+				if (value != this._keepGrainsMaxValueAsString)
 				{
-					this._keepConsumablesValue = value;
-					this.KeepConsumablesValueAsString = this.KeepConsumablesValue.ToString();
-					base.OnPropertyChanged("KeepConsumablesValue");
+					this._keepGrainsMaxValueAsString = value;
+					base.OnPropertyChanged("KeepGrainsMaxValueAsString");
 				}
 			}
 		}
 
 		[DataSourceProperty]
-		public string KeepConsumablesValueAsString
+		public float KeepConsumablesMinValue
 		{
 			get
 			{
-				return this._keepConsumablesValueAsString;
+				return this._keepConsumablesMinValue;
 			}
 			set
 			{
-				if (value != this._keepConsumablesValueAsString)
+				if (value != this._keepConsumablesMinValue)
 				{
-					this._keepConsumablesValueAsString = value;
-					base.OnPropertyChanged("KeepConsumablesValueAsString");
+					this._keepConsumablesMinValue = value;
+					this.KeepConsumablesMinValueAsString = this.KeepConsumablesMinValue.ToString();
+					base.OnPropertyChanged("KeepConsumablesMinValue");
+				}
+			}
+		}
+
+		[DataSourceProperty]
+		public float KeepConsumablesMaxValue
+		{
+			get
+			{
+				return this._keepConsumablesMaxValue;
+			}
+			set
+			{
+				if (value != this._keepConsumablesMaxValue)
+				{
+					this._keepConsumablesMaxValue = value;
+					this.KeepConsumablesMaxValueAsString = this.KeepConsumablesMaxValue.ToString();
+					base.OnPropertyChanged("KeepConsumablesMaxValue");
+				}
+			}
+		}
+
+		[DataSourceProperty]
+		public string KeepConsumablesMinValueAsString
+		{
+			get
+			{
+				return this._keepConsumablesMinValueAsString;
+			}
+			set
+			{
+				if (value != this._keepConsumablesMinValueAsString)
+				{
+					this._keepConsumablesMinValueAsString = value;
+					base.OnPropertyChanged("KeepConsumablesMinValueAsString");
+				}
+			}
+		}
+
+		[DataSourceProperty]
+		public string KeepConsumablesMaxValueAsString
+		{
+			get
+			{
+				return this._keepConsumablesMaxValueAsString;
+			}
+			set
+			{
+				if (value != this._keepConsumablesMaxValueAsString)
+				{
+					this._keepConsumablesMaxValueAsString = value;
+					base.OnPropertyChanged("KeepConsumablesMaxValueAsString");
 				}
 			}
 		}
@@ -1331,74 +1520,40 @@ namespace AutoTrader
 		}
 
 		[DataSourceProperty]
-		public float WeaponTierValue
+		public float WeaponsArmorTierValue
 		{
 			get
 			{
-				return this._weaponTierValue;
+				return this._weaponsArmorTierValue;
 			}
 			set
 			{
-				if (value != this._weaponTierValue)
+				if (value != this._weaponsArmorTierValue)
 				{
-					this._weaponTierValue = value;
-					this.WeaponTierValueAsString = this.WeaponTierValue.ToString();
-					base.OnPropertyChanged("WeaponTierValue");
+					this._weaponsArmorTierValue = value;
+					this.WeaponsArmorTierValueAsString = this.WeaponsArmorTierValue.ToString();
+					base.OnPropertyChanged("WeaponsArmorTierValue");
 				}
 			}
 		}
 
 		[DataSourceProperty]
-		public string WeaponTierValueAsString
+		public string WeaponsArmorTierValueAsString
 		{
 			get
 			{
-				return this._weaponTierValueAsString;
+				return this._weaponsArmorTierValueAsString;
 			}
 			set
 			{
-				if (value != this._weaponTierValueAsString)
+				if (value != this._weaponsArmorTierValueAsString)
 				{
-					this._weaponTierValueAsString = value;
-					base.OnPropertyChanged("WeaponTierValueAsString");
+					this._weaponsArmorTierValueAsString = value;
+					base.OnPropertyChanged("WeaponsArmorTierValueAsString");
 				}
 			}
 		}
 
-		[DataSourceProperty]
-		public float ArmorTierValue
-		{
-			get
-			{
-				return this._armorTierValue;
-			}
-			set
-			{
-				if (value != this._armorTierValue)
-				{
-					this._armorTierValue = value;
-					this.ArmorTierValueAsString = this.ArmorTierValue.ToString();
-					base.OnPropertyChanged("ArmorTierValue");
-				}
-			}
-		}
-
-		[DataSourceProperty]
-		public string ArmorTierValueAsString
-		{
-			get
-			{
-				return this._armorTierValueAsString;
-			}
-			set
-			{
-				if (value != this._armorTierValueAsString)
-				{
-					this._armorTierValueAsString = value;
-					base.OnPropertyChanged("ArmorTierValueAsString");
-				}
-			}
-		}
 
 	}
 }

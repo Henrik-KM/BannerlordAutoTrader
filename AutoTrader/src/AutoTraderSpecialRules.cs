@@ -83,7 +83,7 @@ namespace AutoTrader
                 amountInInventory = PartyBase.MainParty.ItemRoster.GetElementCopyAtIndex(itemIndex).Amount;
             }
 
-            if (amountInInventory < AutoTraderConfig.KeepConsumablesValue)
+            if (amountInInventory < AutoTraderConfig.KeepConsumablesMinValue)
             {
                 return true;
             }
@@ -123,7 +123,7 @@ namespace AutoTrader
             // Resupply grain
             if (itemObject == DefaultItems.Grain)
             {
-                if (amountInInventory < AutoTraderConfig.KeepGrainsValue)
+                if (amountInInventory < AutoTraderConfig.KeepGrainsMinValue)
                 {
                     return true;
                 }
@@ -131,7 +131,7 @@ namespace AutoTrader
             }
             else
             {
-                if (amountInInventory < AutoTraderConfig.KeepConsumablesValue)
+                if (amountInInventory < AutoTraderConfig.KeepConsumablesMinValue)
                 {
                     return true;
                 }

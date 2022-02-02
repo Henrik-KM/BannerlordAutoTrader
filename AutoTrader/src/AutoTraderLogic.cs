@@ -388,7 +388,7 @@ namespace AutoTrader
                 if (averagePriceFactorItemCategory != -99.0)
                 {
                     float price_factor = town.MarketData.GetPriceFactor(itemRosterElement.EquipmentElement.Item.ItemCategory, false);
-                    if (price_factor > averagePriceFactorItemCategory * 0.95)
+                    if (price_factor > averagePriceFactorItemCategory * 0.8)
                         return false;
                 } else {
                     AutoTraderHelpers.PrintDebugMessage("No average price found for " + itemRosterElement.ToString());
@@ -427,14 +427,17 @@ namespace AutoTrader
             ItemObject itemObject = itemRosterElement.EquipmentElement.Item;
             if (AutoTraderHelpers.IsArmor(itemObject))
             {
-                if (itemObject.Tier < (ItemObject.ItemTiers)AutoTraderConfig.ArmorTierValue)
+                if (itemObject.Tier < (ItemObject.ItemTiers)AutoTraderConfig.WeaponsArmorTierValue)
                 {
                     return CheckBasicSellRequirements(itemRosterElement, amount, buyoutPrice);
                 }
                 else return false;
             } else if (AutoTraderHelpers.IsWeapon(itemObject))
             {
-                if (itemObject.Tier < (ItemObject.ItemTiers)AutoTraderConfig.WeaponTierValue)
+                if (AutoTraderConfig.KeepSmeltingValue && itemObject.WeaponDesign != null)
+                    return false; 
+
+                if (itemObject.Tier < (ItemObject.ItemTiers)AutoTraderConfig.WeaponsArmorTierValue)
                 {
                     return CheckBasicSellRequirements(itemRosterElement, amount, buyoutPrice);
                 }
@@ -454,13 +457,21 @@ namespace AutoTrader
             if (AutoTraderHelpers.IsConsumable(itemObject))
             {
                 int amountToKeep = itemObject == DefaultItems.Grain ?
-                    AutoTraderConfig.KeepGrainsValue : AutoTraderConfig.KeepConsumablesValue;
+                    AutoTraderConfig.KeepGrainsMaxValue : AutoTraderConfig.KeepConsumablesMaxValue;
 
                 if (amountToKeep >= itemRosterElement.Amount)
                 {
                     return false;
                 }
                     
+            }
+
+            // Livestock
+            if (AutoTraderHelpers.IsLivestock(itemObject))
+            {
+                // Sell if its treated as junk
+                if (AutoTraderConfig.JunkCattleValue)
+                    return CheckBasicSellRequirements(itemRosterElement, amount, buyoutPrice);
             }
 
             // Special hardwood rule
@@ -483,7 +494,7 @@ namespace AutoTrader
                         float priceFactor = (float)buyoutPrice / averagePrice;
                         if (priceFactor <= 1.05f)
                             return false;
-                    } else if (weighted_profit > buyoutPrice * 0.95)
+                    } else if (weighted_profit > buyoutPrice * 0.8)
                         return false;
                     
                 } else
