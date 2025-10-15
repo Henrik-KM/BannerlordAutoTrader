@@ -1,13 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AutoTrader.GUI
 {
-    public interface IAutoTraderStateHandler
-    {
-
-    }
+	public interface IAutoTraderStateHandler
+	{
+	}
 }

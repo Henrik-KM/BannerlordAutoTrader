@@ -65,8 +65,9 @@ namespace AutoTrader
 					&& (!AutoTraderConfig.UseAltATValue || Input.IsKeyDown(InputKey.T))
 					&& Game.Current.GameStateManager.ActiveState.GetType() == typeof(MapState)
 					&& Game.Current.GameStateManager.ActiveState.IsMenuState == false
-					&& Game.Current.GameStateManager.ActiveState.IsMission == false)
-				{
+					&& Game.Current.GameStateManager.ActiveState.GetType() != typeof(MissionState)
+					)
+                {
 					OpenSettingsMenu();
 				}
 			}

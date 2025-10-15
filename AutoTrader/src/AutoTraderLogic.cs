@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
+using TaleWorlds.Core;
 
 [assembly: InternalsVisibleTo("AutoTraderTests")]
 namespace AutoTrader
@@ -423,7 +423,7 @@ namespace AutoTrader
             // Sell all Armor and Weapons
             if (_logicConnector.IsArmor())
             {
-                if (_logicConnector.IsItemTierBelowNumber(AutoTraderConfig.WeaponsArmorTierValue))
+                if (_logicConnector.IsItemTierLowerThan((ItemObject.ItemTiers)AutoTraderConfig.WeaponsArmorTierValue))
                 {
                     return CheckBasicSellRequirements(amount, buyoutPrice);
                 }
@@ -441,7 +441,7 @@ namespace AutoTrader
                     return false;
                 }
 
-                if (_logicConnector.IsItemTierBelowNumber(AutoTraderConfig.WeaponsArmorTierValue))
+                if (_logicConnector.IsItemTierLowerThan((ItemObject.ItemTiers)AutoTraderConfig.WeaponsArmorTierValue))
                 {
                     return CheckBasicSellRequirements(amount, buyoutPrice);
                 }

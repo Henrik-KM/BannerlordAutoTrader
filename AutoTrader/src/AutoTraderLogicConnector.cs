@@ -1,12 +1,13 @@
-﻿using System;
+﻿using Helpers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Inventory;
 using TaleWorlds.CampaignSystem.Party;
+using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 
@@ -38,37 +39,42 @@ namespace AutoTrader
 
         public int GetInitialGold()
         {
+            // TODO: Use "MobileParty" instead since 1.3?
             AutoTraderHelpers.PrintDebugMessage(" - InitialGold: " + PartyBase.MainParty.Owner.Gold.ToString());
             return PartyBase.MainParty.Owner.Gold;
         }
         public int GetTroopWage()
         {
             // ToDo: Whole daily wage
+            // TODO: Use "MobileParty" instead since 1.3?
             AutoTraderHelpers.PrintDebugMessage(" - TroopWage: " + PartyBase.MainParty.MobileParty.TotalWage.ToString());
             return PartyBase.MainParty.MobileParty.TotalWage;
         }
         public float GetCurrentWeight()
         {
-            AutoTraderHelpers.PrintDebugMessage(" - CurrentWeight: " + PartyBase.MainParty.ItemRoster.TotalWeight.ToString());
-            return PartyBase.MainParty.ItemRoster.TotalWeight;
+            AutoTraderHelpers.PrintDebugMessage(" - CurrentWeight: " + MobileParty.MainParty.TotalWeightCarried.ToString());
+            return MobileParty.MainParty.TotalWeightCarried;
         }
         public float GetInventoryCapacity()
         {
-            AutoTraderHelpers.PrintDebugMessage(" - InventoryCapacity: " + PartyBase.MainParty.InventoryCapacity.ToString());
-            return PartyBase.MainParty.InventoryCapacity;
+            AutoTraderHelpers.PrintDebugMessage(" - InventoryCapacity: " + MobileParty.MainParty.InventoryCapacity.ToString());
+            return MobileParty.MainParty.InventoryCapacity;
         }
         public int GetPlayerItemRosterSize()
         {
+            // TODO: Use "MobileParty" instead since 1.3?
             AutoTraderHelpers.PrintDebugMessage(" - PartyItemRosterSize: " + PartyBase.MainParty.ItemRoster.Count.ToString());
             return PartyBase.MainParty.ItemRoster.Count;
         }
         public int GetNumPartyMembers()
         {
+            // TODO: Use "MobileParty" instead since 1.3?
             AutoTraderHelpers.PrintDebugMessage(" - NumPartyMembers: " + PartyBase.MainParty.NumberOfAllMembers.ToString());
             return PartyBase.MainParty.NumberOfAllMembers;
         }
         public int GetNumLivestockAnimals()
         {
+            // TODO: Use "MobileParty" instead since 1.3?
             AutoTraderHelpers.PrintDebugMessage(" - NumLivestockAnimals: " + PartyBase.MainParty.ItemRoster.NumberOfLivestockAnimals.ToString());
             return PartyBase.MainParty.ItemRoster.NumberOfLivestockAnimals;
         }
@@ -193,18 +199,18 @@ namespace AutoTrader
             var merchantType = GetMerchantType();
             if (merchantType == MerchantType.Town)
             {
-                InventoryManager.OpenScreenAsTrade(Settlement.CurrentSettlement.ItemRoster, Settlement.CurrentSettlement.Town,
-                    InventoryManager.InventoryCategoryType.None, null);
+                InventoryScreenHelper.OpenScreenAsTrade(Settlement.CurrentSettlement.ItemRoster, Settlement.CurrentSettlement.Town,
+                    InventoryScreenHelper.InventoryCategoryType.None, null);
                 return true;
             }
             else if (merchantType == MerchantType.Village)
             {
-                InventoryManager.OpenScreenAsTrade(Settlement.CurrentSettlement.ItemRoster, Settlement.CurrentSettlement.Village, InventoryManager.InventoryCategoryType.None, null);
+                InventoryScreenHelper.OpenScreenAsTrade(Settlement.CurrentSettlement.ItemRoster, Settlement.CurrentSettlement.Village, InventoryScreenHelper.InventoryCategoryType.None, null);
                 return true;
             }
             else if (merchantType == MerchantType.Caravan)
             {
-                InventoryManager.OpenTradeWithCaravanOrAlleyParty(MobileParty.ConversationParty, InventoryManager.InventoryCategoryType.None);
+                InventoryScreenHelper.OpenTradeWithCaravanOrAlleyParty(MobileParty.ConversationParty, InventoryScreenHelper.InventoryCategoryType.None);
                 return true;
             }
             return false;
@@ -242,10 +248,10 @@ namespace AutoTrader
                 return PartyBase.MainParty.ItemRoster;
         }
 
-        public bool IsItemTierBelowNumber(int number)
+        public bool IsItemTierLowerThan(ItemObject.ItemTiers tier)
         {
-            var result = _currentItemRosterElement.EquipmentElement.Item.Tier < (ItemObject.ItemTiers)number;
-            AutoTraderHelpers.PrintDebugMessage(" - IsItemTierBelowNumber: " + result.ToString());
+            var result = _currentItemRosterElement.EquipmentElement.Item.Tier < tier;
+            AutoTraderHelpers.PrintDebugMessage(" - IsItemTierLowerThan: " + result.ToString());
             return result;
         }
 
@@ -303,8 +309,8 @@ namespace AutoTrader
             TransferCommand transferCommand = TransferCommand.Transfer(1,
                 _isBuying ? InventoryLogic.InventorySide.OtherInventory : InventoryLogic.InventorySide.PlayerInventory,
                 _isBuying ? InventoryLogic.InventorySide.PlayerInventory : InventoryLogic.InventorySide.OtherInventory,
-                _currentItemRosterElement, EquipmentIndex.None, EquipmentIndex.None, CharacterObject.PlayerCharacter, true);
-            InventoryManager.InventoryLogic.AddTransferCommand(transferCommand);
+                _currentItemRosterElement, EquipmentIndex.None, EquipmentIndex.None, CharacterObject.PlayerCharacter);
+            InventoryScreenHelper.GetActiveInventoryState().InventoryLogic.AddTransferCommand(transferCommand);
             AutoTraderHelpers.PrintDebugMessage(" - Transfer of item " + GetItemName() + " complete! (" + (_isBuying? "Buy" : "Sell") + ")");
         }
 
@@ -315,12 +321,14 @@ namespace AutoTrader
             AutoTraderHelpers.PrintDebugMessage(" - ProjectedProfit: " + result.ToString());
             return result;
         }
+
         public int GetItemPrice()
         {
-            var result = InventoryManager.InventoryLogic.GetItemPrice(_currentItemRosterElement.EquipmentElement, _isBuying);
+            var result = InventoryScreenHelper.GetActiveInventoryState().InventoryLogic.GetItemPrice(_currentItemRosterElement.EquipmentElement, _isBuying);
             AutoTraderHelpers.PrintDebugMessage(" - ItemPrice: " + result.ToString());
             return result;
         }
+
         public float GetAveragePriceFallback()
         {
             var result = _currentItemRosterElement.EquipmentElement.Item.Value;
@@ -330,13 +338,13 @@ namespace AutoTrader
 
         public int GetCostOfRosterElement()
         {
-            var result = InventoryManager.InventoryLogic.GetCostOfItemRosterElement(_currentItemRosterElement, _isBuying ? InventoryLogic.InventorySide.OtherInventory : InventoryLogic.InventorySide.PlayerInventory);
+            var result = InventoryScreenHelper.GetActiveInventoryState().InventoryLogic.GetCostOfItemRosterElement(_currentItemRosterElement, _isBuying ? InventoryLogic.InventorySide.OtherInventory : InventoryLogic.InventorySide.PlayerInventory);
             AutoTraderHelpers.PrintDebugMessage(" - CostOfElement: " + result.ToString());
             return result;
         }
         public float GetAveragePriceFactorItemCategory()
         {
-            var result = InventoryManager.InventoryLogic.GetAveragePriceFactorItemCategory(_currentItemRosterElement.EquipmentElement.Item.ItemCategory);
+            var result = InventoryScreenHelper.GetActiveInventoryState().InventoryLogic.GetAveragePriceFactorItemCategory(_currentItemRosterElement.EquipmentElement.Item.ItemCategory);
             AutoTraderHelpers.PrintDebugMessage(" - AveragePriceFactorItemCategory: " + result.ToString());
             return result;
         }
@@ -356,8 +364,10 @@ namespace AutoTrader
         public bool IsTownInRange(int townId, out float actualDistance)
         {
             var town = GetTownById(townId);
-            var result = Campaign.Current.Models.MapDistanceModel.GetDistance(MobileParty.MainParty, town.Settlement, (float)AutoTraderConfig.SearchRadiusValue, out actualDistance);
-            return result;
+            float estimatedLandRatio;
+            //TODO: take into consideration naval distance
+            actualDistance = Campaign.Current.Models.MapDistanceModel.GetDistance(MobileParty.MainParty, town.Settlement, false, MobileParty.NavigationType.Default, out estimatedLandRatio);
+            return actualDistance < (float)AutoTraderConfig.SearchRadiusValue;
         }
         public bool IsCurrentTown(int townId)
         {
@@ -397,8 +407,11 @@ namespace AutoTrader
         public bool IsVillageInRange(int villageId, out float actualDistance)
         {
             var village = GetVillageById(villageId);
-            var result = Campaign.Current.Models.MapDistanceModel.GetDistance(MobileParty.MainParty, village.Settlement, (float)AutoTraderConfig.SearchRadiusValue, out actualDistance);
-            return result;
+            float estimatedLandRatio;
+
+            // TODO: take into consideration naval distance
+            actualDistance = Campaign.Current.Models.MapDistanceModel.GetDistance(MobileParty.MainParty, village.Settlement, false, MobileParty.NavigationType.Default, out estimatedLandRatio);
+            return actualDistance < (float)AutoTraderConfig.SearchRadiusValue; ;
         }
         public bool IsCurrentVillage(int townId)
         {

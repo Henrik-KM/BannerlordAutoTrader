@@ -41,13 +41,13 @@ namespace AutoTrader
         private bool AutoTradeGoodsCondition(MenuCallbackArgs args)
         {
             args.optionLeaveType = GameMenuOption.LeaveType.Trade;
-            return MenuHelper.SetOptionProperties(args, true, false, new TextObject());
+            return MenuHelper.SetOptionProperties(args, true, false, new TextObject("", null));
         }
 
         private bool AutoTradeGoodsVillageCondition(MenuCallbackArgs args)
         {
             args.optionLeaveType = GameMenuOption.LeaveType.Trade;
-            return MenuHelper.SetOptionProperties(args, true, false, new TextObject());
+            return MenuHelper.SetOptionProperties(args, true, false, new TextObject("", null));
         }
 
         private bool AutoTradeGoodsCaravanCondition()

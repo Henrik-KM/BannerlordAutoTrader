@@ -7,7 +7,7 @@ using TaleWorlds.Core;
 
 namespace AutoTrader.GUI
 {
-    class AutoTraderState : GameState
+    internal class AutoTraderState : GameState
     {
 		public IAutoTraderStateHandler Handler
 		{

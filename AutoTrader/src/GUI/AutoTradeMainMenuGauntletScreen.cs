@@ -4,7 +4,7 @@ using TaleWorlds.ScreenSystem;
 
 namespace AutoTrader.GUI
 {
-    class AutoTradeMainMenuGauntletScreen : ScreenBase
+    internal class AutoTradeMainMenuGauntletScreen : ScreenBase
     {
 		private GauntletLayer _gauntletLayer;
 		private AutoTraderMenuViewModel _viewModel;
@@ -19,7 +19,7 @@ namespace AutoTrader.GUI
 			this._viewModel = new AutoTraderMenuViewModel(null);
 
 			// Add and configure layers
-			this._gauntletLayer = new GauntletLayer(1, "GauntletLayer");
+			this._gauntletLayer = new GauntletLayer(1, "GauntletLayer", false);
 			this._gauntletLayer.LoadMovie("AutoTraderConfigScreen", this._viewModel);
 			this._gauntletLayer.InputRestrictions.SetInputRestrictions(true, InputUsageMask.All);
 

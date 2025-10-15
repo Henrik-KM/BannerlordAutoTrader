@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TaleWorlds.Core;
 
 namespace AutoTrader
 {
@@ -37,7 +38,7 @@ namespace AutoTrader
         float GetRosterElementWeight();
         bool InitInventory();
         int GetMerchantGold();
-        bool IsItemTierBelowNumber(int number);
+        bool IsItemTierLowerThan(ItemObject.ItemTiers tier);
 
         bool IsItemFiltered(List<string> doneItems = null);
         void TransferItem();
