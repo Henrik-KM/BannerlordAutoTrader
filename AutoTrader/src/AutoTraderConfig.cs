@@ -11,7 +11,7 @@ namespace AutoTrader
     {
         private static PlatformFilePath _configFile;
 
-        public static string AutoTraderGameVersion { get; } = "e1.7.1";
+        public static string AutoTraderGameVersion { get; } = "v1.2.8";
 
         public static int MaxKeepGrainsValue { get; set; } = 500;
 

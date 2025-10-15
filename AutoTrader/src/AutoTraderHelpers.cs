@@ -4,22 +4,43 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
+using TaleWorlds.Engine;
 using TaleWorlds.Library;
 
 namespace AutoTrader
 {
     public static class AutoTraderHelpers
     {
+        private static PlatformFilePath debugLogFilePath = new PlatformFilePath(EngineFilePaths.ConfigsPath, "AutoTrader.log");
+
+        public static void Initialize()
+        {
+            if (FileHelper.FileExists(AutoTraderHelpers.debugLogFilePath))
+            {
+                FileHelper.DeleteFile(AutoTraderHelpers.debugLogFilePath);
+            }
+            FileHelper.SaveFileString(debugLogFilePath, "AutoTrader log");
+            FileHelper.AppendLineToFileString(debugLogFilePath, "------------------------------------------------------------------------------");
+            FileHelper.AppendLineToFileString(debugLogFilePath, "For detailed info, add <debugMode>True</debugMode> to the AutoTraderConfig.xml");
+            FileHelper.AppendLineToFileString(debugLogFilePath, "WARNING: Debug mode is will drastically slow autotrading!");
+            FileHelper.AppendLineToFileString(debugLogFilePath, "------------------------------------------------------------------------------");
+        }
+
         public static void PrintMessage(string message)
         {
             InformationManager.DisplayMessage(new InformationMessage(message, Color.FromUint(16753958U)));
+            FileHelper.AppendLineToFileString(debugLogFilePath, message);
         }
 
         public static void PrintDebugMessage(string message)
         {
             if (AutoTraderConfig.DebugMode)
-                InformationManager.DisplayMessage(new InformationMessage(message, Color.FromUint(16753958U)));
+            {
+                FileHelper.AppendLineToFileString(debugLogFilePath, message);
+            }
+                
         }
 
         public static bool IsArmor(ItemObject itemObject)
@@ -78,6 +99,8 @@ namespace AutoTrader
         public static bool IsSmithingMaterial(ItemObject itemObject)
         {
             if (itemObject == DefaultItems.Charcoal
+                || itemObject == DefaultItems.HardWood
+                || itemObject == DefaultItems.IronOre
                 || itemObject == DefaultItems.IronIngot1
                 || itemObject == DefaultItems.IronIngot2
                 || itemObject == DefaultItems.IronIngot3

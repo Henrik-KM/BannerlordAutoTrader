@@ -1,26 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TaleWorlds.CampaignSystem;
-using TaleWorlds.Core;
-
+﻿
 namespace AutoTrader
 {
     public static class AutoTraderSpecialRules
     {
         // Capacity
-        public static bool CheckBuyMaxCapacityRule(ItemObject itemObject, int baseCapacity)
+        public static bool CheckBuyMaxCapacityRule(ILogicConnector logicConnector, int baseCapacity, int amount)
         {
             // Checks if we have the item too often
-            int itemIndex = PartyBase.MainParty.ItemRoster.FindIndexOfItem(itemObject);
-            float stackWeightInRoster = 0f;
-            if (itemIndex >= 0) //TEST
-            {
-                stackWeightInRoster = PartyBase.MainParty.ItemRoster.GetElementCopyAtIndex(itemIndex).GetRosterElementWeight();
-            }
-            if (stackWeightInRoster >= (float)baseCapacity * ((float)AutoTraderConfig.MaxCapacityValue / 100f))
+            var rosterWeight = logicConnector.GetItemWeight() * amount;
+            AutoTraderHelpers.PrintDebugMessage("- weight in roster: " + rosterWeight.ToString());
+            if (rosterWeight >= (float)baseCapacity * ((float)AutoTraderConfig.MaxCapacityValue / 100f))
             {
                 return false;
             }
@@ -28,28 +17,23 @@ namespace AutoTrader
         }
 
         // Cattle
-        public static bool CheckBuyCattleCondition(ItemObject itemObject)
+        public static bool CheckBuyCattleCondition(ILogicConnector logicConnector)
         {
-            return AutoTraderConfig.BuyGoodsValue && itemObject.IsAnimal;
+            return AutoTraderConfig.BuyGoodsValue && logicConnector.IsLivestock();
         }
 
-        public static bool CheckBuyCattleRule()
+        public static bool CheckBuyCattleRule(ILogicConnector logicConnector)
         {
-            return PartyBase.MainParty.NumberOfAllMembers >= PartyBase.MainParty.ItemRoster.NumberOfLivestockAnimals;
+            return logicConnector.GetNumPartyMembers() >= logicConnector.GetNumLivestockAnimals();
         }
 
         // Horses
-        public static bool CheckBuyHorsesCondition(ItemObject itemObject)
+        public static bool CheckBuyHorsesRules(ILogicConnector logicConnector, int buyoutPrice, int availablePlayerGold)
         {
-            return AutoTraderHelpers.IsHorse(itemObject);
-        }
-
-        public static bool CheckBuyHorsesRules(ItemObject itemObject, int buyoutPrice, int availablePlayerGold)
-        {
-            if (itemObject.HorseComponent.IsPackAnimal && AutoTraderConfig.BuyHorsesValue)
+            if (logicConnector.IsPackAnimal() && AutoTraderConfig.BuyHorsesValue)
             {
                 // Buy pack horses rule
-                if ((int)((float)PartyBase.MainParty.NumberOfAllMembers) > PartyBase.MainParty.NumberOfPackAnimals && buyoutPrice * 2 < availablePlayerGold)
+                if (logicConnector.GetNumPartyMembers() > logicConnector.GetNumLivestockAnimals() && buyoutPrice * 2 < availablePlayerGold)
                     return true;
 
                 // TODO: Add max herding setting
@@ -58,51 +42,22 @@ namespace AutoTrader
         }
 
         // Resupply hardwood
-        public static bool CheckBuyGoodsCondition(ItemObject itemObject)
+        public static bool CheckBuyResupplyHardwoodRule(ILogicConnector logicConnector, int currentAmount)
         {
-            return AutoTraderHelpers.IsTradeGood(itemObject);
-        }
-
-        public static bool CheckBuyGoodsRules(ItemObject itemObject)
-        {
-            if (AutoTraderConfig.ResupplyHardwoodValue && itemObject == DefaultItems.HardWood)
-            {
-                if (CheckBuyResupplyHardwoodRule())
-                    return true;
-            }
+            if (AutoTraderConfig.ResupplyHardwoodValue && logicConnector.IsItemHardwood())
+                return currentAmount < AutoTraderConfig.KeepConsumablesMinValue;
             return false;
         }
 
-        public static bool CheckBuyResupplyHardwoodRule()
-        {
-            // Find item stack in current inventory
-            int amountInInventory = 0;
-            int itemIndex = PartyBase.MainParty.ItemRoster.FindIndexOfItem(DefaultItems.HardWood);
-            if (itemIndex >= 0)
-            {
-                amountInInventory = PartyBase.MainParty.ItemRoster.GetElementCopyAtIndex(itemIndex).Amount;
-            }
-
-            if (amountInInventory < AutoTraderConfig.KeepConsumablesMinValue)
-            {
-                return true;
-            }
-            return false;
-        }
-
-        // Resupply
-        public static bool CheckBuyConsumablesCondition(ItemObject itemObject)
-        {
-            return AutoTraderHelpers.IsConsumable(itemObject);
-        }
-
-        public static bool CheckBuyConsumablesRules(ItemObject itemObject)
+        /// <summary>
+        /// Resupply
+        /// </summary>
+        /// <param name="itemId"></param>
+        /// <returns></returns>
+        public static bool CheckBuyConsumablesRules(ILogicConnector logicConnector, int currentAmount)
         {
             if (AutoTraderConfig.ResupplyValue)
-            {
-                if (CheckBuyResupplyRule(itemObject))
-                    return true;
-            }
+                return CheckBuyResupplyRule(logicConnector, currentAmount);
             return false;
         }
 
@@ -110,20 +65,14 @@ namespace AutoTrader
         /// True if the given item is below the restock value
         /// False if not
         /// </returns>
-        public static bool CheckBuyResupplyRule(ItemObject itemObject)
+        public static bool CheckBuyResupplyRule(ILogicConnector logicConnector, int currentAmount)
         {
             // Find item stack in current inventory
-            int amountInInventory = 0;
-            int itemIndex = PartyBase.MainParty.ItemRoster.FindIndexOfItem(itemObject);
-            if (itemIndex >= 0)
-            {
-                amountInInventory = PartyBase.MainParty.ItemRoster.GetElementCopyAtIndex(itemIndex).Amount;
-            }
 
             // Resupply grain
-            if (itemObject == DefaultItems.Grain)
+            if (logicConnector.IsItemGrain())
             {
-                if (amountInInventory < AutoTraderConfig.KeepGrainsMinValue)
+                if (currentAmount < AutoTraderConfig.KeepGrainsMinValue)
                 {
                     return true;
                 }
@@ -131,7 +80,7 @@ namespace AutoTrader
             }
             else
             {
-                if (amountInInventory < AutoTraderConfig.KeepConsumablesMinValue)
+                if (currentAmount < AutoTraderConfig.KeepConsumablesMinValue)
                 {
                     return true;
                 }

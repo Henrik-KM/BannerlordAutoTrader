@@ -1,9 +1,7 @@
 ﻿using System;
-using TaleWorlds.Core;
-using TaleWorlds.Engine;
-using TaleWorlds.Engine.Screens;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
+using TaleWorlds.ScreenSystem;
 
 namespace AutoTrader
 {
@@ -176,7 +174,7 @@ namespace AutoTrader
 			this._keepGrainsMinValue = AutoTraderConfig.KeepGrainsMinValue;
 			this._keepGrainsMaxValue = AutoTraderConfig.KeepGrainsMaxValue;
 			this._keepConsumablesMinValue = AutoTraderConfig.KeepConsumablesMinValue;
-			this._keepConsumablesMinValue = AutoTraderConfig.KeepConsumablesMaxValue;
+			this._keepConsumablesMaxValue = AutoTraderConfig.KeepConsumablesMaxValue;
 			this._useInventorySpaceValue = AutoTraderConfig.UseInventorySpaceValue;
 			this._keepWagesValue = AutoTraderConfig.KeepWagesValue;
 			this._searchRadiusValue = AutoTraderConfig.SearchRadiusValue;

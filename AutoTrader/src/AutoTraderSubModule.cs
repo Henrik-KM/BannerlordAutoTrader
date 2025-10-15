@@ -2,16 +2,17 @@
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Localization;
-using TaleWorlds.Engine.Screens;
+using TaleWorlds.CampaignSystem.GameState;
 using TaleWorlds.Library;
 using TaleWorlds.InputSystem;
 using AutoTrader.GUI;
-using HarmonyLib;
 
 namespace AutoTrader
 {
     public class AutoTraderSubModule : MBSubModuleBase
     {
+		private AutoTraderLogic _autoTraderLogic;
+
 		public AutoTraderSubModule()
 		{
 			//var harmony = new Harmony("eskalior.autotrader");
@@ -22,6 +23,8 @@ namespace AutoTrader
 		{
 			base.OnSubModuleLoad();
 			AutoTraderConfig.Initialize();
+			AutoTraderHelpers.Initialize();
+			_autoTraderLogic = new AutoTraderLogic(new AutoTraderLogicConnector());
 		}
 
 		public override void OnGameInitializationFinished(Game game)
@@ -31,7 +34,7 @@ namespace AutoTrader
 				+ t_text
 				+ new TextObject("{=ATStartup02}> to open the settings menu", null).ToString());
 
-			string version = ApplicationVersion.FromParametersFile(ApplicationVersionGameType.Singleplayer).ToString().Substring(0, 6);
+			string version = ApplicationVersion.FromParametersFile(null).ToString().Substring(0, 6);
 
 			if (!version.Equals(AutoTraderConfig.AutoTraderGameVersion)){
 				AutoTraderHelpers.PrintMessage(new TextObject("{=ATVersionMismatch01}You are using AutoTrader for ", null).ToString()
@@ -39,6 +42,11 @@ namespace AutoTrader
 					+ new TextObject("{=ATVersionMismatch02} with Bannerlord ", null).ToString() 
 					+ version
 					+ new TextObject("{=ATVersionMismatch03}. If you encounter issues please check the mod page for a fitting version.", null).ToString());
+			}
+
+			if (AutoTraderConfig.DebugMode)
+			{
+				AutoTraderHelpers.PrintMessage("WARNING: AutoTrader debug mode is active. This will make autotrading drastically slower.");
 			}
 		}
 
@@ -50,7 +58,7 @@ namespace AutoTrader
 
 		protected override void OnApplicationTick(float dt)
 		{
-			if(Game.Current != null && !AutoTraderLogic.IsTradingActive)
+			if(Game.Current != null && !_autoTraderLogic.IsTradingActive)
 			{
 				if(Input.IsKeyDown(InputKey.LeftAlt) 
 					&& Input.IsKeyDown(InputKey.A) 
@@ -64,7 +72,7 @@ namespace AutoTrader
 			}
 		}
 
-		protected override void OnGameStart(Game game, IGameStarter gameStarterObject)
+		protected override void InitializeGameStarter(Game game, IGameStarter gameStarterObject)
 		{
 			if (game.GameType is Campaign)
 			{
@@ -75,7 +83,7 @@ namespace AutoTrader
 
 		private void AddBehaviors(CampaignGameStarter gameStarterObject)
 		{
-			gameStarterObject.AddBehavior(new TradeBehavior());
+			gameStarterObject.AddBehavior(new TradeBehavior(_autoTraderLogic));
 		}
 
 	}
