@@ -35,5 +35,9 @@
     <string id="ATDefault" text="默认: " />
     <string id="ATDone" text="完成" />
     <string id="ATCancel" text="取消" />
+    <string id="ATAutoTourStarted" text="自动贸易巡游已开始。按下&lt;Alt + A + R&gt;停止。" />
+    <string id="ATAutoTourStopped" text="自动贸易巡游已停止。" />
+    <string id="ATAutoTourInterrupted" text="自动贸易巡游被中断。" />
+    <string id="ATAutoTourNoTarget" text="无法为自动贸易巡游找到新的城镇。" />
 </strings>
 </base>

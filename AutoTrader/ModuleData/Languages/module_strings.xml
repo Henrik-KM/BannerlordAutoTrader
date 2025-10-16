@@ -34,5 +34,9 @@
     <string id="ATDefault" text="Default: " />
     <string id="ATDone" text="Done" />
     <string id="ATCancel" text="Cancel" />
+    <string id="ATAutoTourStarted" text="Auto-trade tour started. Press &lt;Alt + A + R&gt; to stop." />
+    <string id="ATAutoTourStopped" text="Auto-trade tour stopped." />
+    <string id="ATAutoTourInterrupted" text="Auto-trade tour interrupted." />
+    <string id="ATAutoTourNoTarget" text="Unable to find a new town for the auto-trade tour." />
   </strings>
 </base>

@@ -11,7 +11,8 @@ namespace AutoTrader
 {
     public class AutoTraderSubModule : MBSubModuleBase
     {
-		private AutoTraderLogic _autoTraderLogic;
+                private AutoTraderLogic _autoTraderLogic;
+                private AutoTraderTourController _autoTraderTourController;
 
 		public AutoTraderSubModule()
 		{
@@ -23,8 +24,9 @@ namespace AutoTrader
 		{
 			base.OnSubModuleLoad();
 			AutoTraderConfig.Initialize();
-			AutoTraderHelpers.Initialize();
-			_autoTraderLogic = new AutoTraderLogic(new AutoTraderLogicConnector());
+                        AutoTraderHelpers.Initialize();
+                        _autoTraderLogic = new AutoTraderLogic(new AutoTraderLogicConnector());
+                        _autoTraderTourController = new AutoTraderTourController(_autoTraderLogic);
 		}
 
 		public override void OnGameInitializationFinished(Game game)
@@ -58,20 +60,22 @@ namespace AutoTrader
 
 		protected override void OnApplicationTick(float dt)
 		{
-			if(Game.Current != null && !_autoTraderLogic.IsTradingActive)
-			{
-				if(Input.IsKeyDown(InputKey.LeftAlt) 
-					&& Input.IsKeyDown(InputKey.A) 
-					&& (!AutoTraderConfig.UseAltATValue || Input.IsKeyDown(InputKey.T))
-					&& Game.Current.GameStateManager.ActiveState.GetType() == typeof(MapState)
+                        if(Game.Current != null && !_autoTraderLogic.IsTradingActive)
+                        {
+                                if(Input.IsKeyDown(InputKey.LeftAlt)
+                                        && Input.IsKeyDown(InputKey.A)
+                                        && (!AutoTraderConfig.UseAltATValue || Input.IsKeyDown(InputKey.T))
+                                        && Game.Current.GameStateManager.ActiveState.GetType() == typeof(MapState)
 					&& Game.Current.GameStateManager.ActiveState.IsMenuState == false
 					&& Game.Current.GameStateManager.ActiveState.GetType() != typeof(MissionState)
 					)
                 {
-					OpenSettingsMenu();
-				}
-			}
-		}
+                                        OpenSettingsMenu();
+                                }
+                        }
+
+                        _autoTraderTourController?.Tick(dt);
+                }
 
 		protected override void InitializeGameStarter(Game game, IGameStarter gameStarterObject)
 		{
