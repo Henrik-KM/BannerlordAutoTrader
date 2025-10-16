@@ -247,6 +247,10 @@ namespace AutoTrader
 
             try
             {
+                // Reflection is used here to access the 'TargetSettlement' property of MobileParty,
+                // because there is no public API to retrieve the current move target.
+                // This approach is fragile and may break if the property name or its accessibility changes in future game versions.
+                // Tested with Mount & Blade II: Bannerlord v1.2.3.
                 PropertyInfo targetProperty = typeof(MobileParty).GetProperty("TargetSettlement", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
                 if (targetProperty != null)
                 {
