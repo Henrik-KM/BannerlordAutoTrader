@@ -35,17 +35,17 @@ namespace AutoTraderTests
         {
             AutoTraderConfig.Initialize();
 
-            Assert.AreEqual(AutoTraderConfig.ArmorTierValue, 2);
+            Assert.AreEqual(AutoTraderConfig.WeaponsArmorTierValue, 2);
 
-            AutoTraderConfig.ArmorTierValue = 3;
+            AutoTraderConfig.WeaponsArmorTierValue = 3;
 
-            Assert.AreEqual(AutoTraderConfig.ArmorTierValue, 3);
+            Assert.AreEqual(AutoTraderConfig.WeaponsArmorTierValue, 3);
 
             AutoTraderConfig.Save();
 
             AutoTraderConfig.Initialize();
 
-            Assert.AreEqual(AutoTraderConfig.ArmorTierValue, 3);
+            Assert.AreEqual(AutoTraderConfig.WeaponsArmorTierValue, 3);
         }
     }
 }
