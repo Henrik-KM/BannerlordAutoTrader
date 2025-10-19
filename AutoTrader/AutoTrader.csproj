@@ -17,12 +17,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="GUI/Prefabs/**/*" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="ModuleData/**/*" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="SubModule.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="GUI/Prefabs/**/*" />
+    <None Include="ModuleData/**/*" />
+    <None Include="SubModule.xml" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="MountAndBlade.ReferenceAssemblies" Version="1.0.0" />
   </ItemGroup>
+  <Target Name="CopyModuleAssets" AfterTargets="Build">
+    <ItemGroup>
+      <ModuleAssets Include="ModuleData\**\*;GUI\Prefabs\**\*;SubModule.xml" />
+    </ItemGroup>
+    <Copy SourceFiles="@(ModuleAssets)" DestinationFiles="@(ModuleAssets->'$(MSBuildProjectDirectory)\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+  </Target>
 </Project>
