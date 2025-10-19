@@ -16,6 +16,11 @@ The repository now includes an MSBuild project so you can produce the same layou
    dotnet build AutoTrader/AutoTrader.csproj -c Release
    ```
 3. Copy the contents of `AutoTrader/bin/Win64_Shipping_Client/` into your `Mount & Blade II Bannerlord/Modules/AutoTrader/bin/Win64_Shipping_Client/` folder (create the folders if they do not exist).
+   Additionally, copy the following files and folders from the `AutoTrader/` directory into your `Mount & Blade II Bannerlord/Modules/AutoTrader/` folder (not under `bin`):
+   - `SubModule.xml`
+   - `ModuleData/`
+   - `GUI/Prefabs/`
+   This ensures all required files for the mod are present at the module root.
 
 The project references the `MountAndBlade.ReferenceAssemblies` NuGet package so no manual game DLL copying is required.
 
