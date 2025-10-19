@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <RootNamespace>AutoTrader</RootNamespace>
+    <AssemblyName>AutoTrader</AssemblyName>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <OutputPath>bin/Win64_Shipping_Client/</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="src/**/*.cs"
+             Exclude="src/AutoTradeMenuGauntletScreen.cs;src/AutoTraderMenuViewModel.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="GUI/Prefabs/**/*" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="ModuleData/**/*" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="SubModule.xml" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MountAndBlade.ReferenceAssemblies" Version="1.0.0" />
+  </ItemGroup>
+</Project>
